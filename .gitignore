@@ -1,0 +1,6 @@
+*
+!.gitignore
+!bot.py
+!config.example.yaml
+!pyproject.toml
+!README.md

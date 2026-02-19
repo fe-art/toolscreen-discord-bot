@@ -1,0 +1,15 @@
+bot_token: ""
+
+guild_id: 0
+
+watched_channel_ids:
+  - 0
+
+bug_tag_name: "Bug"
+ongoing_tag_name: "Ongoing"
+done_tag_name: "Done"
+
+triage_delay_seconds: 2
+
+inactivity_hours: 24
+inactivity_check_interval_minutes: 30
