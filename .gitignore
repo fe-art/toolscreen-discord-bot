@@ -1,6 +1,9 @@
 *
 !.gitignore
 !bot.py
+!troubleshoot.py
+!troubleshooting-tree.yaml
 !config.example.yaml
 !pyproject.toml
 !README.md
+!CONTRIBUTING.md

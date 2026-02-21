@@ -1,0 +1,1404 @@
+# Toolscreen Troubleshooting Decision Tree
+# Format: flat node graph with ID-based references
+#
+# Node types:
+#   question  - Ask user, show buttons, branch on answer
+#   solution  - Show fix, then "Did this help?" -> yes=resolved / no=did_not_help
+#   info      - Show text, then auto-continue to `next`
+#   escalate  - Collect diagnostics sequentially, then open bug report
+#
+# Every `solution` node MUST have `did_not_help` pointing to the next node.
+# Every `question` option MUST have `next`.
+# `escalate` is always a terminal node.
+
+meta:
+  version: 2
+  updated: "2026-02-21"
+  source: "Analysis of 67 #more-help threads + 4849 #help messages + 2256 #help + 224 #more-help (2026-02-21)"
+
+nodes:
+
+  # ============================================================
+  # ROOT
+  # ============================================================
+  root:
+    type: question
+    text: "What issue are you experiencing?"
+    options:
+      - label: "Toolscreen doesn't show up / Ctrl+I does nothing"
+        next: nsu_fullscreen
+      - label: "Screen freezes, goes black, or flickers"
+        next: ff_when
+      - label: "Game crashes or won't launch"
+        next: crash_when
+      - label: "Performance issues (FPS drop, lag)"
+        next: perf_severity
+      - label: "Keybind / hotkey not working"
+        next: kb_type
+      - label: "Eye zoom / sensitivity issue"
+        next: sens_type
+      - label: "NinjaBrainBot overlay setup or issue"
+        next: ninb_setup_or_issue
+      - label: "Pie mirror / overlay not updating"
+        next: ov_pie_or_other
+      - label: "OBS / screen recording issue"
+        next: obs_symptom
+      - label: "Settings not saving"
+        next: save_which
+      - label: "How do I update / uninstall Toolscreen?"
+        next: howto_update_or_uninstall
+      - label: "Something else"
+        next: escalate_generic
+
+  # ============================================================
+  # BRANCH 1: Toolscreen doesn't show up
+  # ============================================================
+  nsu_fullscreen:
+    type: question
+    text: "Are you in **fullscreen** mode (not windowed)?"
+    options:
+      - label: "No / Not sure"
+        next: sol_use_fullscreen
+      - label: "Yes, I'm in fullscreen"
+        next: nsu_antivirus
+
+  sol_use_fullscreen:
+    type: solution
+    text: |
+      Press **F11** to enter fullscreen. Toolscreen requires fullscreen to work.
+      The config menu (Ctrl+I) **only works in fullscreen mode**, not in windowed or borderless.
+      Windowed support is planned but not yet available.
+    did_not_help: nsu_mc_open
+
+  nsu_mc_open:
+    type: question
+    text: "Was **Minecraft open** when you installed Toolscreen?"
+    options:
+      - label: "Yes / Not sure"
+        next: sol_mc_open_during_install
+      - label: "No, MC was closed"
+        next: nsu_antivirus
+
+  sol_mc_open_during_install:
+    type: solution
+    text: |
+      Toolscreen cannot install properly while Minecraft is running.
+      1. **Close Minecraft** completely
+      2. **Re-run** the Toolscreen installer (double-click the .jar)
+      3. Launch Minecraft and check if Toolscreen appears
+    did_not_help: nsu_antivirus
+
+  nsu_antivirus:
+    type: question
+    text: "What antivirus software are you using?"
+    options:
+      - label: "Windows Defender (default)"
+        next: nsu_smart_app_control
+      - label: "Third-party (McAfee, Bitdefender, Norton, Kaspersky, Avast, etc.)"
+        next: sol_thirdparty_av
+      - label: "None / Disabled"
+        next: nsu_afterburner
+
+  nsu_smart_app_control:
+    type: question
+    text: "Are you on **Windows 11**? If so, is **Smart App Control** enabled?"
+    options:
+      - label: "Yes / Not sure (Windows 11)"
+        next: sol_disable_smart_app_control
+      - label: "No, I'm on Windows 10"
+        next: nsu_defender_exclusions
+      - label: "Already disabled"
+        next: nsu_defender_exclusions
+
+  sol_disable_smart_app_control:
+    type: solution
+    text: |
+      **Smart App Control** silently blocks Toolscreen even with Defender exclusions set.
+      1. Press **Windows + I** to open Settings
+      2. Go to **Privacy & Security > Windows Security > App & Browser Control**
+      3. Set **Smart App Control** to **Off**
+      4. Under Reputation-based Protection, turn off **"Check Apps and Files"**
+      5. Restart Minecraft and try again
+
+      This is separate from Windows Defender and must be disabled independently.
+      This setting does NOT exist on Windows 10.
+    did_not_help: nsu_defender_exclusions
+
+  nsu_defender_exclusions:
+    type: question
+    text: "Did you add Toolscreen exclusions in Windows Defender during install?"
+    options:
+      - label: "No / Not sure"
+        next: sol_add_defender_exclusions
+      - label: "Yes, exclusions are set"
+        next: nsu_afterburner
+
+  sol_add_defender_exclusions:
+    type: solution
+    text: |
+      Reinstall Toolscreen and **accept the exclusion prompts**.
+      If you skipped them, manually add exclusions for:
+      - The Toolscreen JAR file
+      - `C:\Users\<username>\.config\toolscreen\dlls\`
+    did_not_help: nsu_afterburner
+
+  sol_thirdparty_av:
+    type: solution
+    text: |
+      Third-party AV programs (McAfee, Bitdefender, Norton, etc.) often **quarantine** Toolscreen.dll
+      on first encounter. "Disabling" the AV does NOT restore quarantined files.
+
+      **Steps to try in order:**
+      1. Open your AV's **quarantine/history** and **restore** any Toolscreen-related files
+      2. Add exclusions for `C:\Users\<username>\.config\toolscreen\` in the AV
+      3. Re-run the Toolscreen installer (double-click the .jar)
+      4. If that fails, **fully uninstall** the third-party AV (not just disable it).
+         Windows Defender will take over and respects Toolscreen exclusions properly.
+    did_not_help: nsu_afterburner
+
+  nsu_afterburner:
+    type: question
+    text: "Do you have **MSI Afterburner** or **RivaTuner** running?"
+    options:
+      - label: "Yes"
+        next: sol_close_afterburner
+      - label: "No"
+        next: nsu_gpu_overlay
+
+  sol_close_afterburner:
+    type: solution
+    text: |
+      Close **MSI Afterburner AND RivaTuner** completely. They conflict with Toolscreen's graphics hooks.
+
+      If you need Afterburner, you can either:
+      - Add Minecraft's `javaw.exe` to RivaTuner and set **Application Detection Level** to **None**
+      - Or set `disableHookChaining = false` in `config.toml`
+    did_not_help: nsu_gpu_overlay
+
+  nsu_unicode:
+    type: question
+    text: "Does your **Windows username** contain non-English characters (accents, special symbols, etc.)?"
+    options:
+      - label: "Yes"
+        next: sol_unicode_username
+      - label: "No"
+        next: nsu_launcher
+
+  sol_unicode_username:
+    type: solution
+    text: |
+      This was a known bug in older versions. **Update to the latest version** of Toolscreen, which includes Unicode path support.
+    did_not_help: nsu_launcher
+
+  nsu_gpu_overlay:
+    type: question
+    text: "Do you have any **GPU overlay software** running? (GeForce Experience, AMD Adrenalin overlay, Discord overlay)"
+    options:
+      - label: "Yes"
+        next: sol_disable_gpu_overlay
+      - label: "No"
+        next: nsu_unicode
+
+  sol_disable_gpu_overlay:
+    type: solution
+    text: |
+      GPU overlay software can conflict with Toolscreen's graphics hooks, just like RivaTuner.
+      **Disable overlays** in:
+      - **GeForce Experience** -> Settings -> In-Game Overlay -> OFF
+      - **AMD Adrenalin** -> Settings -> Preferences -> In-Game Overlay -> OFF
+      - **Discord** -> Settings -> Game Overlay -> OFF
+    did_not_help: nsu_java_path
+
+  nsu_java_path:
+    type: question
+    text: "Check your launcher's Java path: **Edit Instance > Settings > Java**. Does it show just **\"javaw\"** or a full path starting with **C:/...**?"
+    options:
+      - label: "It just says 'javaw'"
+        next: sol_fix_java_path
+      - label: "It shows a full path (C:/Program Files/Java/...)"
+        next: nsu_unicode
+
+  sol_fix_java_path:
+    type: solution
+    text: |
+      The **"javaw" shortcut** prevents Toolscreen from injecting properly.
+      1. Go to **Edit Instance > Settings > Java > Auto-detect** (or Browse)
+      2. Select a path that starts with `C:/...` such as:
+         `C:/Program Files/Java/jdk-21/bin/javaw.exe`
+      3. If no full path appears, install Java from: https://aka.ms/download-jdk/microsoft-jdk-21-windows-x64.msi
+      4. After installing, click **Refresh** in the Auto-detect menu
+    did_not_help: nsu_unicode
+
+  nsu_launcher:
+    type: question
+    text: "What launcher are you using?"
+    options:
+      - label: "Vanilla (official Mojang) launcher"
+        next: sol_vanilla_launcher
+      - label: "Prism Launcher / MultiMC"
+        next: sol_nsu_clean_reinstall
+      - label: "Modrinth App"
+        next: sol_modrinth_unsupported
+      - label: "MCSR Launcher"
+        next: sol_mcsr_launcher_issues
+
+  sol_vanilla_launcher:
+    type: solution
+    text: |
+      Toolscreen **does not support** the vanilla launcher. The installer uses pre-launch commands that the vanilla launcher can't run.
+      Switch to **Prism Launcher** or **MultiMC**.
+    did_not_help: escalate_generic
+
+  sol_modrinth_unsupported:
+    type: solution
+    text: |
+      The **Modrinth App** is not yet supported by Toolscreen. Switch to **Prism Launcher** or **MultiMC** for full compatibility.
+    did_not_help: escalate_generic
+
+  sol_mcsr_launcher_issues:
+    type: solution
+    text: |
+      The **MCSR Launcher** has known issues with Toolscreen:
+      - It sometimes fails to create `Toolscreen.jar`
+      - The auto-updater does not work properly
+
+      **Recommended:** Switch to **Prism Launcher** for the most reliable Toolscreen experience.
+      If you want to stay on MCSR Launcher, manually download the .jar and place it in your instance folder.
+    did_not_help: sol_nsu_clean_reinstall
+
+  sol_nsu_clean_reinstall:
+    type: solution
+    text: |
+      Try a clean reinstall:
+      1. Delete the config folder: `C:\Users\<username>\.config\toolscreen\`
+      2. Reinstall Toolscreen
+      3. Verify the **pre-launch command** is set correctly in your instance settings
+      4. Check your launcher logs for errors
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # BRANCH 2: Screen freezes / goes black / flickers
+  # ============================================================
+  ff_when:
+    type: question
+    text: "When does the issue occur?"
+    options:
+      - label: "When loading a new world / starting a new run"
+        next: sol_ff_standardsettings
+      - label: "When toggling a hotkey/macro (resize, thin, borderless)"
+        next: ff_toggle_gpu
+      - label: "When switching between fullscreen and windowed/borderless"
+        next: ff_toggle_gpu
+      - label: "Constantly or randomly"
+        next: ff_random_mirrors
+
+  sol_ff_standardsettings:
+    type: solution
+    text: |
+      This is usually caused by the **Standard Settings mod** toggling fullscreen off on each new world.
+      1. Check your **standardsettings.json** file in your instance folder
+      2. Look for a `fullscreen` setting and make sure it's set to **true** (or remove the line)
+      3. Alternatively, open Minecraft settings (book and quill icon) and verify fullscreen is enabled there
+    did_not_help: ff_toggle_gpu
+
+  # --- Branch 2A: triggered by toggle ---
+  ff_toggle_gpu:
+    type: question
+    text: "What type of GPU do you have?"
+    options:
+      - label: "Integrated (Intel HD, Intel Iris, AMD integrated)"
+        next: sol_ff_integrated_gpu
+      - label: "Dedicated (NVIDIA or AMD discrete)"
+        next: sol_ff_dedicated_gpu
+      - label: "Not sure"
+        next: sol_ff_integrated_gpu
+
+  sol_ff_integrated_gpu:
+    type: solution
+    text: |
+      This is a **known bug** strongly correlated with integrated graphics. Try the following in order:
+      1. **Update to Toolscreen v1.0.5+** (rendering changes fix this for many users)
+      2. Add `C:\Users\<username>\.config\toolscreen\` to **Windows Defender exclusions**
+      3. Enable **"Allow exit to fullscreen regardless of game state"** in settings
+      4. Delete `config.toml` and reinstall
+    did_not_help: escalate_freeze
+
+  sol_ff_dedicated_gpu:
+    type: solution
+    text: |
+      Less common on dedicated GPUs, but still possible. Try these steps:
+      1. **Update to Toolscreen v1.0.5+**
+      2. Add `C:\Users\<username>\.config\toolscreen\` to **Windows Defender exclusions**
+      3. Enable **"Allow exit to fullscreen regardless of game state"**
+      4. Delete `config.toml` and reinstall
+      5. **Update your GPU drivers**
+    did_not_help: escalate_freeze
+
+  escalate_freeze:
+    type: escalate
+    text: |
+      This is an acknowledged bug that the developer is investigating. Let's collect information for a bug report.
+      Please also enable **Advanced Debug Logging**: Advanced -> Settings -> Debug (5739) -> Advanced Logging, then reproduce the issue.
+    collect:
+      - key: gpu
+        prompt: "What GPU do you have? (exact model, e.g., Intel HD 4600, RX 9070 XT)"
+      - key: ts_version
+        prompt: "What Toolscreen version?"
+      - key: display_mode
+        prompt: "What display mode? (Fullscreen / Borderless)"
+      - key: trigger
+        prompt: "What exactly triggers the freeze? (which hotkey/macro)"
+      - key: log
+        prompt: "Please upload your Toolscreen log: `C:\\Users\\<username>\\.config\\toolscreen\\logs\\latest.log`"
+      - key: launcher_log
+        prompt: "Please upload your launcher log (from Prism/MultiMC log viewer)"
+
+  # --- Branch 2B: constant/random flickering ---
+  ff_random_mirrors:
+    type: question
+    text: "Do you have **mirrors** enabled in your current mode (especially the **mapless mirror**)?"
+    options:
+      - label: "Yes"
+        next: sol_remove_mirror
+      - label: "No"
+        next: ff_random_version
+      - label: "Not sure"
+        next: sol_remove_mirror
+
+  sol_remove_mirror:
+    type: solution
+    text: |
+      Try **removing the mapless mirror** from your current mode's configuration.
+      This is a confirmed bug where mirrors cause flickering. If removing it fixes the issue, it's a known bug awaiting a developer fix.
+    did_not_help: ff_random_version
+
+  ff_random_version:
+    type: question
+    text: "What Toolscreen version are you using?"
+    options:
+      - label: "1.0.3 or older"
+        next: sol_update_flickering
+      - label: "1.0.5 or newer"
+        next: ff_random_displaymode
+
+  sol_update_flickering:
+    type: solution
+    text: |
+      Version 1.0.3 has known flickering issues. **Update to the latest version** of Toolscreen.
+    did_not_help: ff_random_displaymode
+
+  ff_random_displaymode:
+    type: question
+    text: "Are you using fullscreen or borderless mode?"
+    options:
+      - label: "Borderless"
+        next: sol_switch_to_fullscreen
+      - label: "Fullscreen"
+        next: ff_mojang_logo
+
+  sol_switch_to_fullscreen:
+    type: solution
+    text: |
+      Flickering is more common in **borderless** mode. Try switching to **fullscreen** and see if the issue persists.
+    did_not_help: ff_mojang_logo
+
+  ff_mojang_logo:
+    type: question
+    text: "Does the screen flash the **Mojang logo** during the flickering?"
+    options:
+      - label: "Yes"
+        next: sol_mojang_flash
+      - label: "No"
+        next: escalate_generic
+
+  sol_mojang_flash:
+    type: solution
+    text: |
+      This is a rare bug. Check if Toolscreen's **pre-launch command** is being reset by your launcher.
+      Verify the pre-launch command in your Prism/MultiMC instance settings is still intact.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # BRANCH 3: Game crashes or won't launch
+  # ============================================================
+  crash_when:
+    type: question
+    text: "When does the crash occur?"
+    options:
+      - label: "Immediately on launch"
+        next: crash_launch_code
+      - label: "When pressing F11 (fullscreen toggle)"
+        next: sol_crash_f11
+      - label: "After 5-15 minutes of playing"
+        next: sol_crash_delayed
+      - label: "When using a specific feature (resize, overlay, etc.)"
+        next: crash_feature
+
+  sol_crash_f11:
+    type: solution
+    text: |
+      Pressing **F11** while Toolscreen is active can crash the game. This is a known issue.
+      Use Toolscreen's own **borderless hotkey** instead of F11 to toggle display modes:
+      - Open Ctrl+I > **Advanced > Hotkeys > Toggle Borderless** and assign a hotkey
+    did_not_help: escalate_crash
+
+  # --- 3A: crash on launch ---
+  crash_launch_code:
+    type: question
+    text: "Do you see an exit code in the crash log? Check your launcher's log viewer."
+    options:
+      - label: "Exit code -1073741819 (0xC0000005)"
+        next: sol_crash_access_violation
+      - label: "Exit code -805306369"
+        next: sol_crash_805
+      - label: "White screen crash"
+        next: sol_crash_white_screen
+      - label: "Other code / No code / Not sure"
+        next: sol_crash_generic
+
+  sol_crash_access_violation:
+    type: solution
+    text: |
+      Exit code `-1073741819` (Access Violation). Try these fixes in order:
+      1. **Disable Hardware Acceleration** in Discord
+      2. Close OBS, or switch from **Game Capture** to **Window Capture**
+      3. If Jingle is running, make sure it's using **Java 17+**
+      4. Remove the **Sodium** mod if installed
+      5. Check for and update any **outdated mods**
+    did_not_help: sol_crash_generic
+
+  sol_crash_805:
+    type: solution
+    text: |
+      Exit code `-805306369` is often caused by outdated mods or killing Minecraft while frozen.
+      1. **Update all mods** to their latest versions
+      2. **Update Toolscreen** to the latest version
+      3. Try launching with a **clean instance** (no extra mods)
+    did_not_help: sol_crash_generic
+
+  sol_crash_white_screen:
+    type: solution
+    text: |
+      White screen crashes are typically caused by the **state-output** mod.
+      1. Check if `state-output` is installed in your mods folder
+      2. Delete the file `wpstateout.txt` from your instance folder
+      3. If the crash persists, remove the state-output mod entirely
+    did_not_help: sol_crash_generic
+
+  sol_crash_generic:
+    type: solution
+    text: |
+      Try a clean slate:
+      1. Delete the config folder: `C:\Users\<username>\.config\toolscreen\`
+      2. Reinstall Toolscreen
+      3. Make sure you're using **Java 17+** (Adoptium/Temurin recommended)
+      4. If you're using **GraalVM**, switch to Adoptium/Temurin (known incompatibility)
+      5. Remove any unnecessary mods and test with a minimal setup
+    did_not_help: escalate_crash
+
+  # --- 3B: delayed crash ---
+  sol_crash_delayed:
+    type: solution
+    text: |
+      Crashes after 5-15 minutes often correlate with:
+      1. **GPU driver issues** (especially Intel integrated) — update your GPU drivers
+      2. **Over-allocated RAM** — don't give Minecraft too much memory (try 2-3GB)
+      3. **Old Toolscreen version** — update to the latest version
+
+      Try all three and see if the crash recurs.
+    did_not_help: escalate_crash
+
+  # --- 3C: feature-triggered crash ---
+  crash_feature:
+    type: question
+    text: "Which feature triggers the crash?"
+    options:
+      - label: "Resizing (thin/wide modes)"
+        next: sol_crash_resize
+      - label: "NinjaBrainBot overlay with interaction enabled"
+        next: sol_crash_ninb_overlay
+      - label: "Full computer crash / BSOD (not just Minecraft)"
+        next: sol_crash_full_pc
+      - label: "Other feature"
+        next: sol_crash_generic
+
+  sol_crash_full_pc:
+    type: solution
+    text: |
+      Full PC crashes / BSODs with Toolscreen are rare but serious. They are most commonly caused by:
+      1. **GPU driver conflicts** — update to the latest GPU drivers
+      2. **Overlay software conflicts** — close MSI Afterburner, RivaTuner, GeForce Experience overlay
+      3. **Very new GPU hardware** may have driver incompatibilities with Toolscreen's graphics hooks
+
+      Try:
+      1. Update GPU drivers to the latest version
+      2. Disable all overlay software
+      3. Update Toolscreen to the latest version
+      4. If using resizing features, update to v1.0.5+ (resizing crashes were fixed)
+    did_not_help: escalate_crash
+
+  sol_crash_resize:
+    type: solution
+    text: |
+      Resizing crashes (including full system crashes) were a known bug fixed in **Toolscreen v1.0.5+**.
+      **Update Toolscreen** to the latest version.
+    did_not_help: escalate_crash
+
+  sol_crash_ninb_overlay:
+    type: solution
+    text: |
+      Crashes with NinjaBrainBot overlay interaction enabled were a known bug fixed in **Toolscreen v1.0.6+**.
+      **Update Toolscreen** to the latest version.
+    did_not_help: escalate_crash
+
+  escalate_crash:
+    type: escalate
+    text: |
+      Let's collect crash information for a bug report.
+    collect:
+      - key: os
+        prompt: "What OS are you on? (e.g., Windows 11 23H2)"
+      - key: ts_version
+        prompt: "What Toolscreen version?"
+      - key: mc_version
+        prompt: "What Minecraft version?"
+      - key: java
+        prompt: "What Java version? (must be 17+)"
+      - key: gpu
+        prompt: "What GPU do you have?"
+      - key: mods
+        prompt: "List your installed mods (or say 'none')"
+      - key: log
+        prompt: "Please upload your Toolscreen log: `C:\\Users\\<username>\\.config\\toolscreen\\logs\\latest.log`"
+      - key: launcher_log
+        prompt: "Please upload your launcher log"
+      - key: steps
+        prompt: "Steps to reproduce the crash?"
+
+  # ============================================================
+  # BRANCH 4: Performance issues (FPS drop, lag)
+  # ============================================================
+  perf_severity:
+    type: question
+    text: "How would you describe the performance issue?"
+    options:
+      - label: "Massive FPS drop (e.g., 60 -> 10 FPS)"
+        next: perf_massive
+      - label: "Frame loss on every mouse movement"
+        next: perf_polling_rate
+      - label: "FPS degrades gradually over time"
+        next: sol_perf_gradual
+      - label: "Lag only in a specific mode (eye zoom, thin, etc.)"
+        next: perf_font
+      - label: "Overlay is slow/laggy (NinjaBrainBot)"
+        next: perf_overlay_type
+
+  perf_polling_rate:
+    type: question
+    text: "Is your **mouse polling rate** set above 1000Hz?"
+    options:
+      - label: "Yes (2000Hz, 4000Hz, 8000Hz, etc.)"
+        next: sol_perf_polling_rate
+      - label: "No / 1000Hz or below / Not sure"
+        next: perf_font
+
+  sol_perf_polling_rate:
+    type: solution
+    text: |
+      Minecraft has known performance issues with mouse polling rates above **1000Hz**.
+      This becomes more noticeable with Toolscreen's rendering.
+      **Lower your mouse polling rate to 1000Hz or below** and test again.
+    did_not_help: perf_font
+
+  perf_massive:
+    type: question
+    text: "Are you on a **low-end system** (e.g., older laptop, limited RAM)?"
+    options:
+      - label: "Yes"
+        next: sol_perf_ram
+      - label: "No, my system should handle it"
+        next: perf_font
+
+  sol_perf_ram:
+    type: solution
+    text: |
+      On low-end systems, **don't over-allocate RAM** to Minecraft. Leave enough resources for Toolscreen.
+      Try setting Minecraft to **2-3 GB max** in your launcher's memory settings.
+    did_not_help: perf_font
+
+  sol_perf_gradual:
+    type: solution
+    text: |
+      Gradual FPS degradation suggests a memory leak or config corruption.
+      1. **Update your GPU drivers** (check via F3 screen in-game)
+      2. Delete the config folder: `C:\Users\<username>\.config\toolscreen\`
+      3. Restart and test again
+      4. If it only happens in **ranked** but not practice, note that for the bug report
+    did_not_help: perf_font
+
+  perf_font:
+    type: question
+    text: "Did you select a **custom font** in Toolscreen settings that might be missing or invalid?"
+    options:
+      - label: "Yes / Maybe"
+        next: sol_perf_font_reset
+      - label: "No"
+        next: perf_border
+
+  sol_perf_font_reset:
+    type: solution
+    text: |
+      Invalid fonts cause severe lag (known bug — font fallback logic is broken).
+      Delete the config file to reset the font:
+      `C:\Users\<username>\.config\toolscreen\config.toml`
+    did_not_help: perf_border
+
+  perf_border:
+    type: question
+    text: "Are you using a **dynamic border** with **high thickness** values?"
+    options:
+      - label: "Yes"
+        next: sol_perf_static_border
+      - label: "No / Not sure"
+        next: perf_overlay_type
+
+  sol_perf_static_border:
+    type: solution
+    text: |
+      The dynamic border rendering algorithm doesn't scale to high thickness values.
+      Switch the border type from **dynamic** to **static** in your mode settings.
+    did_not_help: perf_overlay_type
+
+  perf_overlay_type:
+    type: question
+    text: "Is the lag specifically in the **NinjaBrainBot overlay**?"
+    options:
+      - label: "Yes, the overlay updates slowly"
+        next: perf_overlay_image_vs_window
+      - label: "No, the whole game is laggy"
+        next: escalate_generic
+
+  perf_overlay_image_vs_window:
+    type: question
+    text: "Are you using an **image overlay** or a **window overlay** for NinjaBrainBot?"
+    options:
+      - label: "Image overlay"
+        next: sol_perf_switch_to_window_overlay
+      - label: "Window overlay"
+        next: sol_perf_ninb_not_minimized
+      - label: "Not sure"
+        next: sol_perf_switch_to_window_overlay
+
+  sol_perf_switch_to_window_overlay:
+    type: solution
+    text: |
+      The **image overlay** has a hardcoded **1-second update delay**. Switch to the **window overlay** for real-time updates.
+      Check the pinned messages in the setup channel for instructions on switching.
+    did_not_help: escalate_generic
+
+  sol_perf_ninb_not_minimized:
+    type: solution
+    text: |
+      Make sure NinjaBrainBot is **not minimized**. When minimized, the window overlay stops receiving updates.
+      On a single monitor, use **Win+Tab** to put NinjaBrainBot on a **separate virtual desktop** instead of minimizing it.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # BRANCH 5: Keybind / hotkey not working
+  # ============================================================
+  kb_type:
+    type: question
+    text: "What kind of keybind issue are you experiencing?"
+    options:
+      - label: "Mouse side buttons (MB4/MB5) not registering"
+        next: sol_kb_mouse_buttons
+      - label: "Modifier keys (Ctrl, Shift, Alt) can't be rebound"
+        next: sol_kb_modifier_keys
+      - label: "Key combination is blocked (e.g., Shift+F3 + another key)"
+        next: sol_kb_exclusion_keys
+      - label: "Hotkey triggers when I don't want it to (while typing, in inventory)"
+        next: sol_kb_game_states
+      - label: "Hotkey conflicts with pie chart / number keys"
+        next: sol_kb_number_keys
+      - label: "Other keybind issue"
+        next: kb_other
+
+  sol_kb_mouse_buttons:
+    type: solution
+    text: |
+      Mouse button rebinding **works since v1.0.4**, but has quirks:
+      - Chained rebinds (mouse -> key A, key A -> key B) will follow the chain
+      - Some combinations behave unexpectedly with multiple rebinds active
+
+      If mouse buttons don't register at all, **update Toolscreen** to the latest version.
+      If you hit a quirk, use **AutoHotKey (AHK)** to remap mouse buttons externally instead.
+    did_not_help: escalate_generic
+
+  sol_kb_modifier_keys:
+    type: solution
+    text: |
+      Some modifier keys are still **broken** in current Toolscreen versions:
+      - **RSHIFT**, **CAPSLOCK**, **RALT**, and **LALT** cannot be rebound reliably
+      - Some can be selected in the UI but do nothing in-game
+
+      **Workaround:** Use **AutoHotKey (AHK)** to remap these keys externally.
+      This is a known bug awaiting a developer fix.
+    did_not_help: escalate_generic
+
+  sol_kb_exclusion_keys:
+    type: solution
+    text: |
+      A key in the **exclusion list** is likely blocking your combination.
+      Go to **Advanced -> Hotkeys -> [Your Hotkey] -> Exclusion Keys** and check if any of the keys you're trying to use simultaneously are listed there.
+      Remove the conflicting key from the exclusion list.
+
+      Example: If F3 is an exclusion key for your Thin hotkey, pressing Shift+F3 will block the Thin hotkey from activating.
+    did_not_help: kb_other
+
+  sol_kb_game_states:
+    type: solution
+    text: |
+      You can restrict when a hotkey is active using **Required Game States**.
+      Go to **Advanced -> Hotkeys -> [Your Hotkey]** and set which game states the hotkey should respond in.
+      This prevents hotkeys from firing while you're typing in chat, in the inventory, or in other menus.
+    did_not_help: kb_other
+
+  sol_kb_number_keys:
+    type: solution
+    text: |
+      **Don't use number keys (1-9) as mode hotkeys.** They conflict with Minecraft's pie chart input, which also uses numbers in the "In World (Unpaused)" game state.
+      This conflict **cannot be resolved** using Game States because both pie chart and mode hotkeys share the same state.
+      **Fix:** Rebind your mode hotkeys to non-number keys.
+    did_not_help: kb_other
+
+  kb_other:
+    type: question
+    text: "Which of these describes your issue?"
+    options:
+      - label: "Ctrl+I only works when OBS is open"
+        next: sol_kb_ctrli_obs
+      - label: "Sensitivity hotkey doesn't hold (reverts only on mode change)"
+        next: sol_kb_sens_intended
+      - label: "Ctrl+I doesn't work at all (set a conflicting hotkey)"
+        next: sol_kb_config_reset
+      - label: "Something else"
+        next: escalate_generic
+
+  sol_kb_ctrli_obs:
+    type: solution
+    text: |
+      This issue has two known causes:
+
+      **Cause 1 (AMD GPU):** AMD Adrenalin / Radeon Software injects DLLs that interfere.
+      Fix: Disable AMD Adrenalin overlay or close it entirely.
+
+      **Cause 2 (Any GPU, hook chaining):** Toolscreen needs a secondary render path.
+      Fixes (try in order):
+      1. **Update to Toolscreen 1.0.9+**
+      2. Open `C:\Users\<username>\.config\toolscreen\config.toml`
+      3. Find `disableHookChaining` and set it to `false`
+      4. If that doesn't help, enable **Virtual Camera** in Toolscreen Advanced settings
+
+      **Workaround:** Keep OBS open with a Game Capture source for Minecraft (does not need to record).
+    did_not_help: escalate_generic
+
+  sol_kb_sens_intended:
+    type: solution
+    text: |
+      This is **intended behavior**, not a bug. The non-toggle sensitivity hotkey changes sensitivity until the **next mode change**, not just while held.
+      A "hold" option is a feature request that hasn't been implemented yet.
+    did_not_help: escalate_generic
+
+  sol_kb_config_reset:
+    type: solution
+    text: |
+      You likely set a hotkey that conflicts with Ctrl+I. Settings are stored **externally** (not per-instance), so reinstalling won't help.
+      Delete the config file to reset all settings:
+      `C:\Users\<username>\.config\toolscreen\config.toml`
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # BRANCH 6: Eye zoom / sensitivity issue
+  # ============================================================
+  sens_type:
+    type: question
+    text: "What is the specific issue?"
+    options:
+      - label: "Eye wiggle (ender eye fluctuates between readings)"
+        next: sol_sens_eye_wiggle
+      - label: "Sensitivity feels wrong or choppy / pixel skipping"
+        next: sens_raw_input
+      - label: "Eye zoom looks very choppy / low FPS (2-5 FPS)"
+        next: sol_sens_eyezoom_fps
+      - label: "Zoom level too close or too far (compared to Jingle)"
+        next: sol_sens_zoom_height
+      - label: "Eye appears stretched in zoom overlay"
+        next: sol_sens_stretched
+      - label: "Game twitches/jitters when entering eye measuring mode"
+        next: sol_sens_eyezoom_twitch
+      - label: "Eye zoom magnifier is flickering"
+        next: sol_sens_magnifier_flicker
+
+  sol_sens_eye_wiggle:
+    type: solution
+    text: |
+      Eye wiggle is likely **not caused by Toolscreen**. Toolscreen doesn't change the angle per mouse input — it only affects input rate for a given mouse movement.
+
+      Possible explanations:
+      - Toolscreen's higher FPS rendering makes **existing wiggle more visible**
+      - Your sensitivity settings may have changed during the tool switch
+      - **Test it:** Do 30 throws with Jingle, then 30 with Toolscreen, and compare wiggle rates
+    did_not_help: sens_raw_input
+
+  sens_raw_input:
+    type: question
+    text: "Is **raw input** turned ON in Minecraft settings?"
+    options:
+      - label: "No / Not sure"
+        next: sol_sens_enable_raw_input
+      - label: "Yes, raw input is on"
+        next: sens_godsens
+
+  sol_sens_enable_raw_input:
+    type: solution
+    text: |
+      Turn on **raw input** in Minecraft settings. Without it, the sensitivity slider has **no effect**, which means Toolscreen's sensitivity override also won't work.
+    did_not_help: sens_godsens
+
+  sens_godsens:
+    type: question
+    text: "Are you using **godsens** (the calculated optimal sensitivity value)?"
+    options:
+      - label: "No / What's godsens?"
+        next: sol_sens_setup_godsens
+      - label: "Yes, godsens is set up"
+        next: sens_slider_max
+
+  sol_sens_setup_godsens:
+    type: solution
+    text: |
+      You need to use the Toolscreen sensitivity calculator to set up **godsens**:
+      1. Go to: https://qmaxxen.github.io/Toolscreen-sens-calc/
+      2. Enter your DPI and desired sensitivity
+      3. Set the calculated value as your **in-game Minecraft sensitivity**
+      4. Use Toolscreen's **Global Sensitivity** as a multiplier on top
+
+      Using 100% in-game sensitivity causes choppy, pixel-skipping mouse movement.
+    did_not_help: sens_slider_max
+
+  sens_slider_max:
+    type: question
+    text: "Is the **Global Sensitivity** slider maxed out but you need a higher value?"
+    options:
+      - label: "Yes, the slider cap is too low"
+        next: sol_sens_ctrl_click
+      - label: "No, slider range is fine"
+        next: escalate_generic
+
+  sol_sens_ctrl_click:
+    type: solution
+    text: |
+      **Ctrl-click** the Global Sensitivity input box to type in a value manually. This lets you exceed the slider's maximum (e.g., entering 5.08 when the slider only goes to 3.0).
+    did_not_help: escalate_generic
+
+  sol_sens_eyezoom_fps:
+    type: solution
+    text: |
+      The EyeZoom FPS setting may have defaulted to a very low value (a known bug in some versions).
+      Go to **Advanced -> Modes -> EyeZoom -> ZoomFPS** and set it to a higher value (e.g., 30 or 60).
+    did_not_help: sens_raw_input
+
+  sol_sens_eyezoom_twitch:
+    type: solution
+    text: |
+      Game twitching/jittering when entering eye measuring mode is a **known bug**.
+      Try updating to the latest Toolscreen version. If it persists, this is an acknowledged issue awaiting a fix.
+    did_not_help: escalate_generic
+
+  sol_sens_zoom_height:
+    type: solution
+    text: |
+      Jingle uses different default zoom settings. Adjust the **height** parameter in eyezoom mode settings.
+      Try setting it to **3600-4000** for a similar zoom level to Jingle's default.
+    did_not_help: escalate_generic
+
+  sol_sens_stretched:
+    type: solution
+    text: |
+      This is **intentional behavior** — the eye appears stretched because you're aiming at its center.
+      **Adding more pixels** to the overlay reduces the perceived stretching. Adjust the pixel count in your eyezoom settings.
+    did_not_help: escalate_generic
+
+  sol_sens_magnifier_flicker:
+    type: solution
+    text: |
+      The eye zoom magnifier sometimes flickers on the **F3+Esc** screen. Try:
+      1. Use a different F3 state (toggle F3 off and back on)
+      2. Update to the latest Toolscreen version
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # BRANCH 7A: NinjaBrainBot overlay (setup + issues)
+  # ============================================================
+  ninb_setup_or_issue:
+    type: question
+    text: "What do you need help with?"
+    options:
+      - label: "How to set up the NinjaBrainBot overlay"
+        next: ninb_setup_type
+      - label: "Overlay is laggy / slow to update"
+        next: perf_overlay_image_vs_window
+      - label: "Overlay doesn't appear / is invisible"
+        next: sol_ninb_not_visible
+      - label: "Overlay not updating coordinates after F3+C"
+        next: ov_ninb_minimized
+      - label: "How to show/hide overlay per mode or hotkey"
+        next: sol_ninb_toggle
+      - label: "How to move/reposition the overlay"
+        next: sol_ninb_position
+      - label: "How to make overlay background transparent"
+        next: sol_ninb_color_key
+      - label: "Overlay disappears after ~30 seconds"
+        next: sol_ninb_auto_hide
+      - label: "NinjaBrainBot angle changed after Toolscreen install"
+        next: sol_ninb_angle_change
+
+  ninb_setup_type:
+    type: question
+    text: "Which overlay type do you want to use?"
+    options:
+      - label: "Window overlay (recommended — real-time updates)"
+        next: sol_ninb_setup_window
+      - label: "Image overlay (simpler but has 1-sec delay)"
+        next: sol_ninb_setup_image
+      - label: "Not sure which to pick"
+        next: sol_ninb_setup_window
+
+  sol_ninb_setup_window:
+    type: solution
+    text: |
+      To set up the **window overlay** (recommended):
+      1. Open NinjaBrainBot and keep it running (do NOT minimize it)
+      2. In Toolscreen, go to **Advanced -> Overlays**
+      3. Add a new overlay, select **Window Overlay**
+      4. Select the NinjaBrainBot window
+      5. On a single monitor, use **Win+Tab** to move NinjaBrainBot to a **separate virtual desktop** so it stays running without covering your game
+      6. Disable NinjaBrainBot's **"bring to front on click"** setting in NinjaBrainBot's preferences
+      7. **Add the overlay to each mode you want it in:**
+         Go to Advanced > Modes > Fullscreen > Window Overlays > Add it.
+         Repeat for EyeZoom, Thin, Wide, etc. The overlay won't appear in modes where it hasn't been added.
+    did_not_help: sol_ninb_not_visible
+
+  sol_ninb_setup_image:
+    type: solution
+    text: |
+      To set up the **image overlay**:
+      1. In NinjaBrainBot, enable the overlay image output
+      2. In Toolscreen, go to **Advanced -> Overlays**
+      3. Add a new overlay, select **Image Overlay**
+      4. Point it to the NinjaBrainBot overlay image file
+
+      Note: The image overlay has a **hardcoded 1-second update delay**. For real-time updates, use the window overlay instead.
+    did_not_help: sol_ninb_not_visible
+
+  sol_ninb_not_visible:
+    type: solution
+    text: |
+      If the NinjaBrainBot overlay doesn't appear:
+      1. Make sure NinjaBrainBot is actually **running** (not just installed)
+      2. Check that the overlay is **enabled** in Toolscreen's overlay settings
+      3. Make sure there isn't a **hotkey for disabling mirrors/overlays** that's accidentally set — check Advanced -> Hotkeys
+      4. Try switching between image and window overlay types
+    did_not_help: escalate_generic
+
+  sol_ninb_toggle:
+    type: solution
+    text: |
+      You can show/hide the NinjaBrainBot overlay per mode:
+      1. Go to **Advanced -> Modes -> [Your Mode] -> Overlays**
+      2. Enable or disable the NinjaBrainBot overlay for each specific mode
+      3. Example: Enable it only in your EyeZoom mode, disable it in Fullscreen mode
+
+      You can also set a **hotkey to toggle overlay visibility** in Advanced -> Hotkeys.
+    did_not_help: escalate_generic
+
+  sol_ninb_position:
+    type: solution
+    text: |
+      To move/reposition the NinjaBrainBot overlay:
+      1. Open the Toolscreen config menu (Ctrl+I)
+      2. Go to **Advanced -> Overlays -> [Your NinB Overlay]**
+      3. Adjust the **X/Y position** and **size** values
+      4. You can set **different positions per mode** if needed
+    did_not_help: escalate_generic
+
+  sol_ninb_color_key:
+    type: solution
+    text: |
+      To make the NinjaBrainBot overlay background transparent in-game:
+      1. Go to **Advanced -> Overlays -> [Your NinB Window Overlay]**
+      2. Scroll down and enable **Color Key**
+      3. Click on the color picker and select (or paste) the hex code of NinjaBrainBot's background color
+      4. The matching color will become transparent in the overlay
+    did_not_help: escalate_generic
+
+  sol_ninb_auto_hide:
+    type: solution
+    text: |
+      NinjaBrainBot has an **auto-hide timer** (default ~25-30 seconds) that hides the OBS overlay after a period of inactivity.
+      This makes the Toolscreen overlay disappear too.
+
+      **Fix:** In **NinjaBrainBot's own settings**:
+      1. Find the auto-hide / OBS overlay timer setting
+      2. Either **uncheck** auto-hide, or set it to a very long duration
+      3. Alternatively, switch to a **window overlay** in Toolscreen (not affected by NinB's auto-hide)
+    did_not_help: escalate_generic
+
+  sol_ninb_angle_change:
+    type: solution
+    text: |
+      Toolscreen's sensitivity manipulation can affect NinjaBrainBot's angle calculations.
+      Make sure you've set up **godsens** correctly using the calculator:
+      https://qmaxxen.github.io/Toolscreen-sens-calc/
+
+      After setting godsens, update NinjaBrainBot's sensitivity settings to match.
+      If angle adjustments went from +0.001 to +0.002, your sensitivity configuration needs recalibrating.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # BRANCH 7B: Pie mirror / other overlay issues
+  # ============================================================
+  ov_pie_or_other:
+    type: question
+    text: "Which overlay has the issue?"
+    options:
+      - label: "Pie mirror"
+        next: ov_pie_issue
+      - label: "Unspecified values not showing in thin mode"
+        next: sol_ov_color_code
+      - label: "Other overlay"
+        next: escalate_generic
+
+  ov_ninb_minimized:
+    type: question
+    text: "Is NinjaBrainBot **minimized** or hidden behind the Minecraft window?"
+    options:
+      - label: "Yes / Maybe"
+        next: sol_ov_ninb_virtual_desktop
+      - label: "No, it's visible"
+        next: sol_ov_ninb_bring_to_front
+
+  sol_ov_ninb_virtual_desktop:
+    type: solution
+    text: |
+      When NinjaBrainBot is minimized, the window overlay **stops updating**.
+      Instead of minimizing, use **Win+Tab** to move NinjaBrainBot to a **separate virtual desktop**.
+      This keeps it "running" and visible to Toolscreen without covering your game.
+    did_not_help: sol_ov_ninb_bring_to_front
+
+  sol_ov_ninb_bring_to_front:
+    type: solution
+    text: |
+      Disable NinjaBrainBot's **"bring to front on click"** setting (in NinjaBrainBot's own settings).
+      On a single monitor, this setting can cause focus conflicts with Minecraft.
+
+      Alternative: Use an **AutoHotKey script** to toggle focus between NinjaBrainBot and Minecraft with a hotkey.
+    did_not_help: escalate_generic
+
+  ov_pie_issue:
+    type: question
+    text: "What's wrong with the pie mirror?"
+    options:
+      - label: "Pie mirror shows nothing at all"
+        next: sol_ov_pie_directory
+      - label: "Numbers show but colors are wrong"
+        next: sol_ov_pie_color
+      - label: "Mob spawner numbers not showing"
+        next: sol_ov_pie_mobspawner
+
+  sol_ov_pie_directory:
+    type: solution
+    text: |
+      Check that the **pie directory** is set correctly in your pie mirror settings.
+      It should point to the correct folder where Minecraft outputs pie chart data.
+    did_not_help: escalate_generic
+
+  sol_ov_pie_color:
+    type: solution
+    text: |
+      In your mirror settings:
+      1. **Uncheck "color passthrough"** — this lets you change the output color
+      2. **Increase the "color sensitivity"** number if values aren't being detected
+    did_not_help: escalate_generic
+
+  sol_ov_pie_mobspawner:
+    type: solution
+    text: |
+      To see mob spawner numbers on pie:
+      1. Create a **new mirror**
+      2. Set mode to: **fullscreen -> mirrors -> mobspawner**
+      3. **Uncheck "color passthrough"**
+      4. Increase the **"color sensitivity"** number if needed
+    did_not_help: escalate_generic
+
+  sol_ov_color_code:
+    type: solution
+    text: |
+      This is a **GPU-specific** issue. Certain GPUs render color code values slightly differently, causing detection to fail.
+      Try using **adjacent color code values** (e.g., 203 instead of 204) until you find one your GPU reads correctly.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # BRANCH 8: OBS capture issue
+  # ============================================================
+  obs_symptom:
+    type: question
+    text: "What is the issue?"
+    options:
+      - label: "Black screen in OBS"
+        next: sol_obs_black_screen
+      - label: "Animations / transitions not showing in OBS"
+        next: obs_anim_borderless
+      - label: "Game appears upside down in OBS"
+        next: sol_obs_upside_down
+      - label: "Discord screen share / Medal / non-OBS recording broken"
+        next: sol_obs_discord_screenshare
+      - label: "Toolscreen features only work when OBS is open"
+        next: sol_obs_dependency
+
+  sol_obs_black_screen:
+    type: solution
+    text: |
+      After installing Toolscreen, your OBS capture source needs to be updated.
+      Change your Game Capture to target the window labeled **"Minecraft*"** (the window Toolscreen creates), not the old instance-specific capture.
+    did_not_help: escalate_generic
+
+  obs_anim_borderless:
+    type: solution
+    text: |
+      First, make sure **viewport animations** are set to **Cut** (not Slide/Fade) on **all modes** including Fullscreen:
+      - Ctrl+I > **Advanced > Modes > [Each Mode] > Viewport Animation Type: Cut**
+
+      If animations still don't show in OBS after setting Cut, what display mode are you using?
+    did_not_help: obs_anim_display_mode
+
+  obs_anim_display_mode:
+    type: question
+    text: "Are you using **borderless** or **fullscreen** mode?"
+    options:
+      - label: "Borderless"
+        next: sol_obs_anim_borderless
+      - label: "Fullscreen"
+        next: sol_obs_anim_fullscreen
+
+  sol_obs_anim_borderless:
+    type: solution
+    text: |
+      Known issue with **Game Capture in borderless** mode. Try:
+      1. Use **Virtual Camera** capture instead of Game Capture
+      2. Or switch to **fullscreen** and Alt-Tab out/in to force OBS to re-acquire the game window
+    did_not_help: escalate_generic
+
+  sol_obs_anim_fullscreen:
+    type: solution
+    text: |
+      Check that **"Show 3rd party overlays"** is enabled in your OBS Game Capture source settings.
+      Also try: Alt-Tab out of Minecraft and back in to force OBS to re-acquire the game window.
+    did_not_help: escalate_generic
+
+  sol_obs_upside_down:
+    type: solution
+    text: |
+      Switch your capture method. Try cycling between:
+      - **Game Capture** <-> **Window Capture** <-> **Virtual Camera**
+      One of these should render correctly for your setup.
+    did_not_help: escalate_generic
+
+  sol_obs_discord_screenshare:
+    type: solution
+    text: |
+      Discord screen share and other non-OBS recording tools (Medal, etc.) often don't work in fullscreen because they can't hook into the game the same way OBS does.
+
+      **Workarounds:**
+      1. Enable **Virtual Camera** in Toolscreen: **Advanced -> Settings -> Virtual Camera**
+         - Then in Discord, use the **camera button** (not screen share) to share the virtual camera output
+         - Note: the preview may appear upside-down on your end. This is a Discord bug; viewers see it correctly.
+      2. Use OBS with **Game Capture** source, then share OBS's output via Discord/Medal
+      3. Or use **borderless** mode instead of fullscreen (may have other trade-offs)
+    did_not_help: escalate_generic
+
+  sol_obs_dependency:
+    type: solution
+    text: |
+      This is usually caused by **AMD Adrenalin / Radeon Software** injecting graphics DLLs that Toolscreen depends on. OBS's capture hook changes the DLL loading behavior, making Toolscreen work.
+
+      **Try these in order:**
+      1. If you have an **AMD GPU**: disable the **AMD Adrenalin overlay** or close AMD Radeon Software entirely
+      2. If that doesn't help or isn't applicable: keep OBS running in the background with a Game Capture source for Minecraft (it doesn't need to be recording)
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # BRANCH 9: Settings not saving
+  # ============================================================
+  save_which:
+    type: question
+    text: "Which settings aren't saving?"
+    options:
+      - label: "Thin/wide resolution settings"
+        next: sol_save_resolution
+      - label: "Theme / preset colors"
+        next: sol_save_themes
+      - label: "All settings reset on every restart"
+        next: save_all_reset
+      - label: "Can't open config menu (Ctrl+I broken)"
+        next: sol_kb_config_reset
+
+  sol_save_resolution:
+    type: solution
+    text: |
+      This is a **known bug** in the **Basic tab**. Resolution settings don't save correctly from there.
+      **Workaround:** Use the **Advanced tab** instead to set your thin/wide resolution. This will be fixed in a future update.
+    did_not_help: escalate_generic
+
+  sol_save_themes:
+    type: solution
+    text: |
+      This is a **known bug**. Custom colors save correctly, but the **preset theme base** they're applied on top of does not persist.
+      No workaround is currently available — this is awaiting a developer fix.
+    did_not_help: escalate_generic
+
+  save_all_reset:
+    type: question
+    text: "Does your **Windows username** contain non-English characters (accents, special symbols)?"
+    options:
+      - label: "Yes"
+        next: sol_save_unicode
+      - label: "No"
+        next: sol_save_av_quarantine
+
+  sol_save_unicode:
+    type: solution
+    text: |
+      Non-English characters in your username prevent the config file from saving correctly.
+      **Update to the latest Toolscreen version** which includes Unicode path support.
+    did_not_help: sol_save_av_quarantine
+
+  sol_save_av_quarantine:
+    type: solution
+    text: |
+      Your antivirus may be **deleting or quarantining** the config file after each session.
+      1. Check if the config file exists after closing: `C:\Users\<username>\.config\toolscreen\config.toml`
+      2. Add the entire `.config\toolscreen\` folder to your antivirus exclusions
+      3. If using a third-party AV, consider uninstalling it (see Branch 1 for details)
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # BRANCH 10: Feature requests (informational)
+  # ============================================================
+  # These are handled at the root level by the "Something else" option.
+  # The escalate_generic node covers unknown issues and feature requests.
+
+  # ============================================================
+  # BRANCH 11: How to update / uninstall
+  # ============================================================
+  howto_update_or_uninstall:
+    type: question
+    text: "What do you need to do?"
+    options:
+      - label: "How to update Toolscreen"
+        next: sol_howto_update
+      - label: "How to uninstall Toolscreen"
+        next: sol_howto_uninstall
+      - label: "How to copy settings between instances"
+        next: sol_config_universal
+
+  sol_howto_update:
+    type: solution
+    text: |
+      To update Toolscreen:
+      1. Download the **new .jar file** from the Toolscreen releases
+      2. Place it in the same folder as the old one
+      3. **Double-click** the new .jar to install it
+      4. **Delete the old .jar** file
+      5. That's it — your settings are preserved automatically
+
+      You do NOT need to uninstall first. Just replace the jar.
+    did_not_help: escalate_generic
+
+  sol_howto_uninstall:
+    type: solution
+    text: |
+      To fully uninstall Toolscreen:
+      1. Remove the Toolscreen .jar from your instance
+      2. Remove the **pre-launch command** from your launcher's instance settings
+      3. Delete the config folder: `C:\Users\<username>\.config\toolscreen\`
+      4. If your launcher won't start because it expects the pre-launch command, edit the instance settings and clear the pre-launch command field
+
+      Note: If antivirus deleted Toolscreen's DLL but the launcher still expects it, clearing the pre-launch command will fix the launch issue.
+    did_not_help: escalate_generic
+
+  sol_config_universal:
+    type: solution
+    text: |
+      Toolscreen settings are **universal** by default:
+      Config file: `C:\Users\<username>\.config\toolscreen\config.toml`
+
+      All your instances share the same settings automatically.
+
+      For **per-instance settings**, create a `toolscreen` folder inside your instance's `.minecraft/` directory.
+      Toolscreen will create a `config.toml` there that takes priority over the global config.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # SHARED: Universal escalation
+  # ============================================================
+  escalate_generic:
+    type: escalate
+    text: |
+      Let's collect some information so the dev team can investigate.
+      Before we start, try these **universal fixes** first:
+      1. Update Toolscreen to the latest version
+      2. Delete config: `C:\Users\<username>\.config\toolscreen\config.toml`
+      3. Add the config folder to Windows Defender exclusions
+      4. Close MSI Afterburner / RivaTuner / other overlay software
+      5. Update GPU drivers
+
+      If none of those helped, please provide the following:
+    collect:
+      - key: os
+        prompt: "What OS and version? (e.g., Windows 11 23H2)"
+      - key: ts_version
+        prompt: "What Toolscreen version? (e.g., 1.0.8)"
+      - key: mc_version
+        prompt: "What Minecraft version?"
+      - key: launcher
+        prompt: "What launcher + version? (e.g., Prism 8.4)"
+      - key: java
+        prompt: "What Java version? (must be 17+)"
+      - key: gpu
+        prompt: "What GPU? (e.g., Intel HD 4600, RTX 3060)"
+      - key: display_mode
+        prompt: "Display mode? (Fullscreen / Borderless / Windowed)"
+      - key: log
+        prompt: "Please upload your Toolscreen log: `C:\\Users\\<username>\\.config\\toolscreen\\logs\\latest.log`"
+      - key: launcher_log
+        prompt: "Please upload your launcher log (from Prism/MultiMC log viewer)"
+      - key: steps
+        prompt: "Describe the issue and steps to reproduce it"
+
+  # ============================================================
+  # SHARED: Common solution nodes referenced from multiple branches
+  # ============================================================
+  sol_delete_config:
+    type: solution
+    text: |
+      Delete the Toolscreen config file to reset all settings:
+      `C:\Users\<username>\.config\toolscreen\config.toml`
+      Then restart your game.
+    did_not_help: escalate_generic
+
+  sol_update_toolscreen:
+    type: solution
+    text: |
+      **Update Toolscreen** to the latest version. Many bugs from older versions have been fixed.
+    did_not_help: escalate_generic

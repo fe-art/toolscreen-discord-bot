@@ -9,6 +9,8 @@ from discord import app_commands
 from discord.ext import tasks
 import yaml
 
+import troubleshoot
+
 log = logging.getLogger("toolscreen-bot")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
@@ -36,15 +38,13 @@ Java version: (run `java -version`)
 GPU: (e.g. NVIDIA RTX 3060, AMD RX 6700 XT)
 Display mode: Fullscreen / Windowed / Borderless
 What happened: (steps to reproduce + what you expected vs what you got)
-Full launcher log: (Edit Instance > Minecraft Log — not `latest.log`)
+Full launcher log: (Edit Instance > Minecraft Log, not `latest.log`)
 
 Optional: other mods installed, injector.log, screenshot/video, your config (`!config`)
 
 Toolscreen requires fullscreen to work. If nothing shows up after install, try F11 first."""
 
-CLOSE_MSG = "\u23f3 No replies in {hours}h \u2014 marking as done. Post again to reopen."
-
-# --- DB ---
+CLOSE_MSG = "\u23f3 No replies in {days}d - marking as done. Post again to reopen."
 
 DB = ROOT / "bot.db"
 _conn = sqlite3.connect(DB)
@@ -62,7 +62,6 @@ def db_set(key: str, value: str):
     _conn.commit()
 
 
-# --- Tag helpers ---
 
 def find_tag(channel: discord.ForumChannel, name: str) -> discord.ForumTag | None:
     return next((t for t in channel.available_tags if t.name.lower() == name), None)
@@ -96,8 +95,6 @@ async def unset_tag(thread: discord.Thread, tag: discord.ForumTag) -> bool:
         return False
 
 
-# --- Bot ---
-
 intents = discord.Intents.default()
 intents.guilds = True
 intents.guild_messages = True
@@ -105,6 +102,9 @@ intents.guild_messages = True
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 guild_obj = discord.Object(id=GUILD_ID)
+
+troubleshoot.load_tree()
+troubleshoot.setup(client, tree, guild=guild_obj)
 
 
 @tree.command(name="bugform", description="Set the bug triage message", guild=guild_obj)
@@ -127,6 +127,7 @@ async def cmd_bugform_reset(interaction: discord.Interaction):
 async def on_ready():
     log.info("Online as %s", client.user)
     await tree.sync(guild=guild_obj)
+    await tree.sync()
     if not check_inactive.is_running():
         check_inactive.start()
 
@@ -193,7 +194,7 @@ async def check_inactive():
 
             log.info("Closing inactive thread '%s' (%s)", thread.name, thread.id)
             try:
-                await thread.send(CLOSE_MSG.format(hours=INACTIVITY_H))
+                await thread.send(CLOSE_MSG.format(days=INACTIVITY_H // 24 or 1))
                 await set_tag(thread, done)
                 if ongoing:
                     await unset_tag(thread, ongoing)
