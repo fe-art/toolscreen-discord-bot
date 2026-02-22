@@ -12,8 +12,11 @@ log = logging.getLogger("toolscreen-bot")
 
 ROOT = Path(__file__).resolve().parent
 YAML_PATH = ROOT / "troubleshooting-tree.yaml"
+BUGS_PATH = ROOT / "known-bugs.yaml"
 
 _nodes: dict[str, dict] = {}
+_bugs: dict[str, dict] = {}
+_bug_by_node: dict[str, dict] = {}
 
 _db = sqlite3.connect(ROOT / "bot.db")
 _db.execute("CREATE TABLE IF NOT EXISTS node_hits (node_id TEXT PRIMARY KEY, hits INTEGER NOT NULL DEFAULT 0)")
@@ -41,7 +44,7 @@ SELECT_THRESHOLD = 5
 
 
 def load_tree() -> int:
-    """Parse the YAML file into _nodes. Returns node count."""
+    """Parse the YAML files into _nodes and _bugs. Returns node count."""
     import yaml
 
     with open(YAML_PATH, encoding="utf-8") as f:
@@ -50,6 +53,20 @@ def load_tree() -> int:
     _nodes.clear()
     _nodes.update(data["nodes"])
     _validate_tree()
+
+    _bugs.clear()
+    _bug_by_node.clear()
+    if BUGS_PATH.exists():
+        with open(BUGS_PATH, encoding="utf-8") as f:
+            bug_data = yaml.safe_load(f)
+        _bugs.update(bug_data.get("bugs", {}))
+        for bid, bug in _bugs.items():
+            if bug.get("status") != "fixed":
+                for nid in bug.get("affects", []):
+                    _bug_by_node[nid] = bug
+        log.info("Known bugs loaded: %d (%d active)", len(_bugs),
+                 sum(1 for b in _bugs.values() if b.get("status") != "fixed"))
+
     log.info("Troubleshoot tree loaded: %d nodes", len(_nodes))
     return len(_nodes)
 
@@ -91,6 +108,16 @@ def render_node(node_id: str) -> tuple[discord.Embed, discord.ui.View]:
     embed = _embed_for(node)
     view = discord.ui.View(timeout=None)
 
+    bug = _bug_by_node.get(node_id)
+    if ntype == "solution" and bug:
+        tid = bug["discord_thread"]
+        name = bug["name"]
+        embed.add_field(
+            name="Known issue",
+            value=f"[{name}]({_thread_url(tid)}) - post there to get notified on updates.",
+            inline=False,
+        )
+
     if ntype == "question":
         options = node.get("options", [])
         if len(options) > SELECT_THRESHOLD:
@@ -129,7 +156,7 @@ def render_node(node_id: str) -> tuple[discord.Embed, discord.ui.View]:
             ))
 
     elif ntype == "escalate":
-        _add_escalate_content(embed, node)
+        _add_escalate_content(embed, node, node_id)
         view.add_item(discord.ui.Button(
             label="That solved it!", custom_id=f"ts:{node_id}:solved",
             style=discord.ButtonStyle.success, emoji="\u2705",
@@ -143,14 +170,30 @@ def render_node(node_id: str) -> tuple[discord.Embed, discord.ui.View]:
     return embed, view
 
 
-MORE_HELP_URL = "https://discord.com/channels/1472102343381352539/1472103482201997499"
+GUILD_ID = "1472102343381352539"
+MORE_HELP_ID = "1472103482201997499"
+MORE_HELP_URL = f"https://discord.com/channels/{GUILD_ID}/{MORE_HELP_ID}"
 
 
-def _add_escalate_content(embed: discord.Embed, node: dict):
-    embed.description = (
-        (embed.description or "").rstrip()
-        + f"\n\nHead to [#more-help]({MORE_HELP_URL}) and create a new post with the **Bug** tag."
-    )
+def _thread_url(thread_id: str) -> str:
+    return f"https://discord.com/channels/{GUILD_ID}/{thread_id}"
+
+
+def _add_escalate_content(embed: discord.Embed, node: dict, node_id: str):
+    bug = _bug_by_node.get(node_id)
+    if bug:
+        tid = bug["discord_thread"]
+        name = bug["name"]
+        embed.description = (
+            (embed.description or "").rstrip()
+            + f"\n\nThis is a **known issue**: [{name}]({_thread_url(tid)})"
+            + "\nPost a message there to get notified when it's resolved and help the developers with additional info."
+        )
+    else:
+        embed.description = (
+            (embed.description or "").rstrip()
+            + f"\n\nHead to [#more-help]({MORE_HELP_URL}) and create a new post with the **Bug** tag."
+        )
     collect = node.get("collect", [])
     if collect:
         prompts = "\n".join(f"- **{c['key']}**: {c['prompt']}" for c in collect)

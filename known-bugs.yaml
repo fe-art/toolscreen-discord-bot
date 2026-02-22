@@ -1,0 +1,123 @@
+# Known unsolved bugs tracked via Discord threads.
+#
+# Purpose: direct users to existing threads instead of creating duplicates.
+# Escalate nodes in troubleshooting-tree.yaml can reference these by id
+# to include a "join this thread" link instead of "create a new post".
+#
+# Fields:
+#   id:              stable key, referenced from troubleshooting-tree.yaml
+#   name:            short human-readable label
+#   discord_thread:  thread ID in #more-help
+#   github_issue:    optional, linked GH issue number
+#   status:          open | investigating | fixed
+#   affects:         list of troubleshooting-tree node ids that lead here
+#   summary:         one-liner for LLM/human context during yaml editing
+
+bugs:
+
+  freeze_on_toggle:
+    name: Screen freeze when toggling fullscreen/borderless or macros
+    discord_thread: "1474141460424163348"
+    github_issue: null
+    status: investigating
+    affects: [escalate_freeze]
+    summary: >
+      Strongly correlated with integrated GPUs. Screen goes black or freezes
+      when toggling display modes or macros. Acknowledged by developer.
+
+  flickering_fullscreen_borderless:
+    name: Screen flickering in fullscreen/borderless
+    discord_thread: "1474055729856905327"
+    github_issue: null
+    status: investigating
+    affects: [escalate_freeze]
+    summary: >
+      Flickering when switching between fullscreen and borderless, or
+      constantly while playing. Related to mirror rendering and display mode.
+
+  rshift_rebind:
+    name: RSHIFT / CAPSLOCK / RALT / LALT rebinding broken
+    discord_thread: "1473758138107953265"
+    github_issue: null
+    status: open
+    affects: [sol_kb_modifier_keys]
+    summary: >
+      These modifier keys can be selected in the UI but do nothing in-game.
+      No fix, AHK workaround only.
+
+  first_boot_fail:
+    name: Toolscreen fails on first launch after PC restart
+    discord_thread: "1474839884542902403"
+    github_issue: null
+    status: open
+    affects: [sol_nsu_first_boot_fail]
+    summary: >
+      TS works fine, then after a reboot it doesn't load until MC is
+      relaunched 1-3 times. Intermittent, cause unknown.
+
+  font_crash:
+    name: Selecting a font crashes GUI / Ctrl+I shows cursor but no menu
+    discord_thread: "1473697798821253150"
+    github_issue: null
+    status: open
+    affects: [sol_kb_font_crash, sol_perf_font_reset]
+    summary: >
+      Changing fonts in settings corrupts textFontPath in config.toml.
+      Workaround is to delete the font line from config. Fonts are "broken rn".
+
+  global_frame_limit:
+    name: Global frame limit is half of configured value (1.0.7+)
+    discord_thread: "1474903666837159946"
+    github_issue: null
+    status: open
+    affects: []
+    summary: >
+      Frame limiter reports/applies half the configured FPS value.
+      Reported since 1.0.7, persists in 1.0.9.1.
+
+  cursor_size_not_saving:
+    name: Cursor size resets after restart
+    discord_thread: "1474623687553581126"
+    github_issue: null
+    status: open
+    affects: []
+    summary: >
+      Custom cursor size does not persist across restarts.
+
+  themes_not_saving:
+    name: Theme preset base not saving
+    discord_thread: "1474041766217777162"
+    github_issue: null
+    status: open
+    affects: [sol_save_themes]
+    summary: >
+      Custom colors save but the preset theme base resets. No workaround.
+
+  resolution_not_saving:
+    name: Thin/wide resolution not saving from Basic tab
+    discord_thread: "1473226877442326578"
+    github_issue: null
+    status: open
+    affects: [sol_save_resolution]
+    summary: >
+      Resolution set in Basic tab resets. Workaround: use Advanced tab.
+
+  opengl_hook_conflict:
+    name: OpenGL hook conflict prevents initialization
+    discord_thread: "1472915912020594865"
+    github_issue: null
+    status: investigating
+    affects: [escalate_generic]
+    summary: >
+      Toolscreen fails to hook OpenGL on certain system configurations.
+      Related to AMD Adrenalin / hook chaining.
+
+  obs_only_dependency:
+    name: Toolscreen only works when OBS is open
+    discord_thread: "1473957957094998141"
+    github_issue: null
+    status: investigating
+    affects: [sol_kb_ctrli_obs]
+    summary: >
+      Two causes: AMD Adrenalin DLL injection, or hook chaining issue.
+      disableHookChaining=false or Virtual Camera workaround.

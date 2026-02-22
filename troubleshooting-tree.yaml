@@ -13,8 +13,8 @@
 
 meta:
   version: 2
-  updated: "2026-02-21"
-  source: "Analysis of 67 #more-help threads + 4849 #help messages + 2256 #help + 224 #more-help (2026-02-21)"
+  updated: "2026-02-22"
+  source: "Analysis of 67 #more-help + 4849+2256+1985 #help + 224 #more-help messages"
 
 nodes:
 
@@ -26,7 +26,7 @@ nodes:
     text: "What issue are you experiencing?"
     options:
       - label: "Toolscreen doesn't show up / Ctrl+I does nothing"
-        next: nsu_fullscreen
+        next: nsu_worked_before
       - label: "Screen freezes, goes black, or flickers"
         next: ff_when
       - label: "Game crashes or won't launch"
@@ -47,12 +47,37 @@ nodes:
         next: save_which
       - label: "How do I update / uninstall Toolscreen?"
         next: howto_update_or_uninstall
+      - label: "Toolscreen doesn't fill the screen (1440p, 4K, ultrawide)"
+        next: sol_resolution_mismatch
       - label: "Something else"
         next: escalate_generic
 
   # ============================================================
   # BRANCH 1: Toolscreen doesn't show up
   # ============================================================
+  nsu_worked_before:
+    type: question
+    text: "Did Toolscreen work before but stopped after shutting down / restarting your PC?"
+    options:
+      - label: "Yes, it worked before"
+        next: sol_nsu_first_boot_fail
+      - label: "No, it never worked"
+        next: nsu_fullscreen
+
+  sol_nsu_first_boot_fail:
+    type: solution
+    text: |
+      Some users report Toolscreen not loading on the **first launch after a PC restart**.
+      This is a **known intermittent issue** under investigation.
+
+      **Steps to try:**
+      1. Close Minecraft completely and relaunch it (may take 2-3 tries)
+      2. Check that your antivirus hasn't deleted files:
+         - The .jar should be in your instance folder
+         - The DLL should be in `C:\Users\<username>\.config\toolscreen\dlls\`
+      3. Update to the latest Toolscreen version
+    did_not_help: nsu_antivirus
+
   nsu_fullscreen:
     type: question
     text: "Are you in **fullscreen** mode (not windowed)?"
@@ -65,9 +90,9 @@ nodes:
   sol_use_fullscreen:
     type: solution
     text: |
-      Press **F11** to enter fullscreen. Toolscreen requires fullscreen to work.
-      The config menu (Ctrl+I) **only works in fullscreen mode**, not in windowed or borderless.
-      Windowed support is planned but not yet available.
+      Press **F11** to enter fullscreen. The config menu (Ctrl+I) **only works in fullscreen**.
+      Once configured, you can use **borderless mode** via a hotkey (set in Advanced -> Hotkeys -> Toggle Borderless).
+      Toolscreen does NOT work in **windowed** (non-borderless) mode.
     did_not_help: nsu_mc_open
 
   nsu_mc_open:
@@ -152,7 +177,9 @@ nodes:
       1. Open your AV's **quarantine/history** and **restore** any Toolscreen-related files
       2. Add exclusions for `C:\Users\<username>\.config\toolscreen\` in the AV
       3. Re-run the Toolscreen installer (double-click the .jar)
-      4. If that fails, **fully uninstall** the third-party AV (not just disable it).
+      4. If files still won't save/load after restoring, your AV may have changed folder permissions.
+         Run in **Admin PowerShell**: `icacls "$env:USERPROFILE\.config\Toolscreen" /reset /t`
+      5. If that fails, **fully uninstall** the third-party AV (not just disable it).
          Windows Defender will take over and respects Toolscreen exclusions properly.
     did_not_help: nsu_afterburner
 
@@ -425,6 +452,8 @@ nodes:
     type: question
     text: "When does the crash occur?"
     options:
+      - label: "Jar file disappeared / 'unable to access jarfile'"
+        next: sol_crash_jar_missing
       - label: "Immediately on launch"
         next: crash_launch_code
       - label: "When pressing F11 (fullscreen toggle)"
@@ -433,6 +462,22 @@ nodes:
         next: sol_crash_delayed
       - label: "When using a specific feature (resize, overlay, etc.)"
         next: crash_feature
+
+  sol_crash_jar_missing:
+    type: solution
+    text: |
+      Your Toolscreen .jar was likely **deleted by antivirus**.
+
+      Toolscreen v1.0.3 was recently classified as a trojan by Microsoft and Google
+      malware definitions (false positive). Newer versions (1.0.8+) are NOT affected.
+
+      **Fix:**
+      1. Download the **latest version** of Toolscreen (not 1.0.3)
+      2. If you can't open the new .jar, **restart your PC** first
+      3. Double-click the new .jar to install
+      4. If it persists, temporarily disable Windows Defender real-time protection,
+         install, then re-enable Defender
+    did_not_help: nsu_antivirus
 
   sol_crash_f11:
     type: solution
@@ -758,9 +803,12 @@ nodes:
   sol_kb_game_states:
     type: solution
     text: |
-      You can restrict when a hotkey is active using **Required Game States**.
-      Go to **Advanced -> Hotkeys -> [Your Hotkey]** and set which game states the hotkey should respond in.
-      This prevents hotkeys from firing while you're typing in chat, in the inventory, or in other menus.
+      Go to **Advanced -> Hotkeys -> [Your Hotkey] -> Required Game States**
+      and set it to **"In World (Cursor Grabbed)"**.
+
+      **Common mistake:** "Cursor Free" is the opposite of what you want. "Cursor Free" means
+      the cursor is visible (inventory/menu). "Cursor Grabbed" means normal gameplay where the
+      cursor controls the camera.
     did_not_help: kb_other
 
   sol_kb_number_keys:
@@ -775,6 +823,8 @@ nodes:
     type: question
     text: "Which of these describes your issue?"
     options:
+      - label: "Ctrl+I grabs cursor but settings menu doesn't appear (macros still work)"
+        next: sol_kb_font_crash
       - label: "Ctrl+I only works when OBS is open"
         next: sol_kb_ctrli_obs
       - label: "Sensitivity hotkey doesn't hold (reverts only on mode change)"
@@ -783,6 +833,21 @@ nodes:
         next: sol_kb_config_reset
       - label: "Something else"
         next: escalate_generic
+
+  sol_kb_font_crash:
+    type: solution
+    text: |
+      This is likely caused by a **corrupted font path** in your config. This happens after changing
+      fonts in Toolscreen settings (fonts are known to be broken in current versions).
+
+      **Fix:**
+      1. Open `C:\Users\<username>\.config\toolscreen\config.toml`
+      2. Find `textFontPath` and delete the entire line
+      3. Save and restart Minecraft
+
+      Alternatively, delete the entire `config.toml` to reset all settings.
+      **Do NOT change fonts** in Toolscreen settings until this bug is officially fixed.
+    did_not_help: sol_kb_config_reset
 
   sol_kb_ctrli_obs:
     type: solution
@@ -1115,6 +1180,8 @@ nodes:
         next: sol_ov_pie_color
       - label: "Mob spawner numbers not showing"
         next: sol_ov_pie_mobspawner
+      - label: "Pie chart in wrong position / can't move it"
+        next: sol_ov_pie_position
 
   sol_ov_pie_directory:
     type: solution
@@ -1139,6 +1206,14 @@ nodes:
       2. Set mode to: **fullscreen -> mirrors -> mobspawner**
       3. **Uncheck "color passthrough"**
       4. Increase the **"color sensitivity"** number if needed
+    did_not_help: escalate_generic
+
+  sol_ov_pie_position:
+    type: solution
+    text: |
+      The pie chart position is controlled by the **mirror group**, not the individual mirror.
+      Go to **Advanced -> Modes -> [Your Mode] -> Mirror Groups -> [Preemptive Pie group]**
+      and change the **output position** there.
     did_not_help: escalate_generic
 
   sol_ov_color_code:
@@ -1315,26 +1390,28 @@ nodes:
   sol_howto_update:
     type: solution
     text: |
-      To update Toolscreen:
-      1. Download the **new .jar file** from the Toolscreen releases
+      **Since v1.0.8**, Toolscreen has an **auto-updater** that prompts on launch.
+
+      To update manually:
+      1. Download the **new .jar file** from Toolscreen releases
       2. Place it in the same folder as the old one
       3. **Double-click** the new .jar to install it
-      4. **Delete the old .jar** file
-      5. That's it — your settings are preserved automatically
+      4. Delete the old .jar file
 
-      You do NOT need to uninstall first. Just replace the jar.
+      Settings are preserved automatically across updates.
     did_not_help: escalate_generic
 
   sol_howto_uninstall:
     type: solution
     text: |
-      To fully uninstall Toolscreen:
+      **Quickest method:** Double-click the Toolscreen .jar file and select **Uninstall**.
+
+      To manually uninstall:
       1. Remove the Toolscreen .jar from your instance
       2. Remove the **pre-launch command** from your launcher's instance settings
       3. Delete the config folder: `C:\Users\<username>\.config\toolscreen\`
-      4. If your launcher won't start because it expects the pre-launch command, edit the instance settings and clear the pre-launch command field
 
-      Note: If antivirus deleted Toolscreen's DLL but the launcher still expects it, clearing the pre-launch command will fix the launch issue.
+      If your launcher won't start because it expects the pre-launch command, clear it in instance settings.
     did_not_help: escalate_generic
 
   sol_config_universal:
@@ -1347,6 +1424,19 @@ nodes:
 
       For **per-instance settings**, create a `toolscreen` folder inside your instance's `.minecraft/` directory.
       Toolscreen will create a `config.toml` there that takes priority over the global config.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # BRANCH 12: Resolution mismatch
+  # ============================================================
+  sol_resolution_mismatch:
+    type: solution
+    text: |
+      Toolscreen defaults to 1080p. On non-1080p monitors (1440p, 4K, ultrawide), you need
+      to set the resolution manually.
+
+      Go to **Ctrl+I -> Advanced -> Modes -> Fullscreen** and set the resolution to match
+      your monitor (e.g., 2560x1440 for 1440p, 3840x2160 for 4K).
     did_not_help: escalate_generic
 
   # ============================================================
