@@ -269,10 +269,32 @@ class TroubleshootButton(discord.ui.DynamicItem[discord.ui.Button],
             pass
 
 
-def setup(client: discord.Client, cmd_tree: app_commands.CommandTree,
-          guild: discord.Object | None = None):
-    """Register /troubleshoot (global) and /troubleshoot-stats (guild-scoped)."""
-    client.add_dynamic_items(TroubleshootButton)
+class HelpChannelStart(discord.ui.DynamicItem[discord.ui.Button],
+                       template=r"ts_help_start"):
+    def __init__(self) -> None:
+        super().__init__(discord.ui.Button(
+            label="Start Troubleshooting",
+            custom_id="ts_help_start",
+            style=discord.ButtonStyle.primary,
+            emoji="\U0001f50d",
+        ))
+
+    @classmethod
+    async def from_custom_id(cls, interaction, item, match):
+        return cls()
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        return True
+
+    async def callback(self, interaction: discord.Interaction):
+        _hit("root")
+        embed, view = render_node("root")
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
+
+def setup(client: discord.Client, cmd_tree: app_commands.CommandTree):
+    """Register commands and wire up dynamic items."""
+    client.add_dynamic_items(TroubleshootButton, HelpChannelStart)
 
     @cmd_tree.command(name="troubleshoot", description="Interactive troubleshooting guide")
     async def cmd_troubleshoot(interaction: discord.Interaction):
@@ -280,7 +302,7 @@ def setup(client: discord.Client, cmd_tree: app_commands.CommandTree,
         embed, view = render_node("root")
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-    @cmd_tree.command(name="troubleshoot-stats", description="Node hit counts", guild=guild)
+    @cmd_tree.command(name="troubleshoot-stats", description="Node hit counts")
     async def cmd_stats(interaction: discord.Interaction):
         rows = top_hits(25)
         if not rows:
@@ -288,3 +310,20 @@ def setup(client: discord.Client, cmd_tree: app_commands.CommandTree,
             return
         lines = [f"`{nid:<30}` {hits}" for nid, hits in rows]
         await interaction.response.send_message("\n".join(lines), ephemeral=True)
+
+    @cmd_tree.command(name="init-help-channel",
+                      description="Post the troubleshooting entry point in this channel")
+    @app_commands.default_permissions(manage_channels=True)
+    async def cmd_init_help(interaction: discord.Interaction):
+        await interaction.response.send_message("Done.", ephemeral=True)
+        embed = discord.Embed(
+            title="Need help?",
+            description=(
+                "Before posting, try the troubleshooting guide below. "
+                "It covers the most common issues and their fixes."
+            ),
+            colour=CLR_QUESTION,
+        )
+        view = discord.ui.View(timeout=None)
+        view.add_item(HelpChannelStart())
+        await interaction.channel.send(embed=embed, view=view)

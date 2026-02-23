@@ -24,6 +24,7 @@ TRIAGE_DELAY: int = config.get("triage_delay_seconds", 2)
 TAG_BUG: str = config.get("bug_tag_name", "Bug").lower()
 TAG_ONGOING: str = config.get("ongoing_tag_name", "Ongoing").lower()
 TAG_DONE: str = config.get("done_tag_name", "Done").lower()
+DEV_ROLE_ID: int = config.get("dev_role_id", 0)
 INACTIVITY_H: int = config.get("inactivity_hours", 24)
 INACTIVITY_CHECK_MIN: int = config.get("inactivity_check_interval_minutes", 30)
 
@@ -101,23 +102,33 @@ intents.guild_messages = True
 
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
-guild_obj = discord.Object(id=GUILD_ID)
-
 troubleshoot.load_tree()
-troubleshoot.setup(client, tree, guild=guild_obj)
+troubleshoot.setup(client, tree)
 
 
-@tree.command(name="bugform", description="Set the bug triage message", guild=guild_obj)
+def _has_dev_role(interaction: discord.Interaction) -> bool:
+    if not DEV_ROLE_ID or not interaction.guild:
+        return False
+    return any(r.id == DEV_ROLE_ID for r in interaction.user.roles)
+
+
+@tree.command(name="bugform", description="Set the bug triage message")
 @app_commands.describe(message="New message (use \\n for newlines)")
 async def cmd_bugform(interaction: discord.Interaction, message: str):
+    if not _has_dev_role(interaction):
+        await interaction.response.send_message("Missing permissions.", ephemeral=True)
+        return
     text = message.replace("\\n", "\n")
     db_set("triage_message", text)
     log.info("Triage updated by %s", interaction.user)
     await interaction.response.send_message(f"Updated.\n>>> {text[:500]}", ephemeral=True)
 
 
-@tree.command(name="bugform-reset", description="Reset bug triage to default", guild=guild_obj)
+@tree.command(name="bugform-reset", description="Reset bug triage to default")
 async def cmd_bugform_reset(interaction: discord.Interaction):
+    if not _has_dev_role(interaction):
+        await interaction.response.send_message("Missing permissions.", ephemeral=True)
+        return
     db_set("triage_message", DEFAULT_TRIAGE)
     log.info("Triage reset by %s", interaction.user)
     await interaction.response.send_message("Reset to default.", ephemeral=True)
@@ -126,8 +137,8 @@ async def cmd_bugform_reset(interaction: discord.Interaction):
 @client.event
 async def on_ready():
     log.info("Online as %s", client.user)
-    await tree.sync(guild=guild_obj)
-    await tree.sync()
+    cmds = await tree.sync()
+    log.info("Synced %d global commands", len(cmds))
     if not check_inactive.is_running():
         check_inactive.start()
 

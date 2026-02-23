@@ -11,5 +11,7 @@ done_tag_name: "Done"
 
 triage_delay_seconds: 2
 
+dev_role_id: 0
+
 inactivity_hours: 24
 inactivity_check_interval_minutes: 30
