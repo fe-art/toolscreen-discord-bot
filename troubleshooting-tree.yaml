@@ -169,6 +169,7 @@ nodes:
       If you skipped them, manually add exclusions for:
       - The Toolscreen JAR file
       - `C:\Users\<username>\.config\toolscreen\dlls\`
+      - `C:\Users\<username>\AppData\Local\Temp\Toolscreen\`
     did_not_help: nsu_afterburner
 
   sol_thirdparty_av:
@@ -1127,6 +1128,9 @@ nodes:
       the area where NinjaBrainBot is positioned (even if it's on another virtual desktop). If this
       causes pauses or tab-outs, try repositioning the NinjaBrainBot window on the virtual desktop
       to a different location, or switch to the **image overlay** method.
+
+      **If your hotkey isn't making NinBot disappear:** Go to Modes > Fullscreen > Window Overlays
+      and remove the NinBot overlay from there. It should only be in the modes where you want it visible.
 
       Also, do NOT click the NinjaBrainBot minimize button while using window overlay -- it will
       cause the overlay to freeze. If the overlay freezes, restart Minecraft.
