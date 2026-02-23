@@ -13,7 +13,7 @@
 
 meta:
   version: 2
-  updated: "2026-02-22"
+  updated: "2026-02-23"
   source: "Analysis of 67 #more-help + 4849+2256+1985 #help + 224 #more-help messages"
 
 nodes:
@@ -49,6 +49,10 @@ nodes:
         next: howto_update_or_uninstall
       - label: "Toolscreen doesn't fill the screen (1440p, 4K, ultrawide)"
         next: sol_resolution_mismatch
+      - label: "Random phantom right-clicks / obsidian misplacement"
+        next: sol_phantom_right_click
+      - label: "Fullscreen resets on every new world"
+        next: sol_ff_standardsettings
       - label: "Something else"
         next: escalate_generic
 
@@ -359,6 +363,10 @@ nodes:
       3. Enable **"Allow exit to fullscreen regardless of game state"**
       4. Delete `config.toml` and reinstall
       5. **Update your GPU drivers**
+
+      **Note:** Very new GPU hardware (e.g., AMD RX 9070 XT) may have driver incompatibilities
+      with Toolscreen's graphics hooks that haven't been resolved yet. If you have a brand new GPU
+      and experience freezes, please file a bug report so the developer can investigate.
     did_not_help: escalate_freeze
 
   escalate_freeze:
@@ -460,6 +468,8 @@ nodes:
         next: sol_crash_f11
       - label: "After 5-15 minutes of playing"
         next: sol_crash_delayed
+      - label: "Launcher says version/mod loader error after updating Toolscreen"
+        next: sol_crash_modloader_entry
       - label: "When using a specific feature (resize, overlay, etc.)"
         next: crash_feature
 
@@ -478,6 +488,19 @@ nodes:
       4. If it persists, temporarily disable Windows Defender real-time protection,
          install, then re-enable Defender
     did_not_help: nsu_antivirus
+
+  sol_crash_modloader_entry:
+    type: solution
+    text: |
+      Toolscreen should NOT appear in your launcher's mod loader list. If it does, it was
+      added during a previous botched install and is preventing your game from launching.
+
+      **Fix:**
+      1. In your launcher, go to **Edit Instance > Version**
+      2. Look for any Toolscreen entry (e.g., "Toolscreen 1.0.3")
+      3. Select it and click **Remove** on the right side
+      4. Launch the game and reinstall Toolscreen normally
+    did_not_help: crash_launch_code
 
   sol_crash_f11:
     type: solution
@@ -765,6 +788,8 @@ nodes:
         next: sol_kb_game_states
       - label: "Hotkey conflicts with pie chart / number keys"
         next: sol_kb_number_keys
+      - label: "Hotkey requires multiple presses / modes cycle weirdly"
+        next: sol_kb_jingle_conflict
       - label: "Other keybind issue"
         next: kb_other
 
@@ -819,6 +844,20 @@ nodes:
       **Fix:** Rebind your mode hotkeys to non-number keys.
     did_not_help: kb_other
 
+  sol_kb_jingle_conflict:
+    type: solution
+    text: |
+      If your macros require multiple presses or you see modes cycling through unexpected states,
+      **Jingle's resizing script** may be running alongside Toolscreen and fighting over window state.
+
+      **Fix:**
+      1. Open Jingle
+      2. Go to **Scripts > Resizing > Disable**
+      3. Or close Jingle entirely if you no longer need it
+
+      Toolscreen replaces Jingle's resizing functionality. You do NOT need both running.
+    did_not_help: kb_other
+
   kb_other:
     type: question
     text: "Which of these describes your issue?"
@@ -831,6 +870,8 @@ nodes:
         next: sol_kb_sens_intended
       - label: "Ctrl+I doesn't work at all (set a conflicting hotkey)"
         next: sol_kb_config_reset
+      - label: "Rebound key triggers a Windows shortcut (Alt+Tab, Alt+Esc, etc.)"
+        next: sol_kb_system_shortcut
       - label: "Something else"
         next: escalate_generic
 
@@ -862,6 +903,8 @@ nodes:
       1. **Update to Toolscreen 1.0.9+**
       2. Open `C:\Users\<username>\.config\toolscreen\config.toml`
       3. Find `disableHookChaining` and set it to `false`
+         (Note: The `disableHookChaining` setting was added in Toolscreen v1.0.9+.
+         If you don't see it in your config.toml, **update Toolscreen first**.)
       4. If that doesn't help, enable **Virtual Camera** in Toolscreen Advanced settings
 
       **Workaround:** Keep OBS open with a Game Capture source for Minecraft (does not need to record).
@@ -880,6 +923,19 @@ nodes:
       You likely set a hotkey that conflicts with Ctrl+I. Settings are stored **externally** (not per-instance), so reinstalling won't help.
       Delete the config file to reset all settings:
       `C:\Users\<username>\.config\toolscreen\config.toml`
+    did_not_help: escalate_generic
+
+  sol_kb_system_shortcut:
+    type: solution
+    text: |
+      Toolscreen rebinds only intercept keys **at the game level**, not the OS level.
+      If you rebind to a key that's part of a Windows shortcut (Alt+Tab, Alt+Esc, Win+key, etc.),
+      Windows will still process the shortcut before Toolscreen can remap it.
+
+      **This is a fundamental limitation** -- Toolscreen cannot block OS-level shortcuts.
+
+      **Fix:** Use **AutoHotKey (AHK)** instead for rebinds that involve system shortcut keys.
+      AHK intercepts keys globally before the OS processes them.
     did_not_help: escalate_generic
 
   # ============================================================
@@ -901,6 +957,8 @@ nodes:
         next: sol_sens_stretched
       - label: "Game twitches/jitters when entering eye measuring mode"
         next: sol_sens_eyezoom_twitch
+      - label: "Eye zoom becomes transparent/see-through when pausing with Esc"
+        next: sol_sens_eyezoom_esc_opacity
       - label: "Eye zoom magnifier is flickering"
         next: sol_sens_magnifier_flicker
 
@@ -994,6 +1052,18 @@ nodes:
       **Adding more pixels** to the overlay reduces the perceived stretching. Adjust the pixel count in your eyezoom settings.
     did_not_help: escalate_generic
 
+  sol_sens_eyezoom_esc_opacity:
+    type: solution
+    text: |
+      This is a **known bug in Toolscreen v1.0.9+**. When you pause with Esc during eye zoom,
+      the overlay becomes transparent, making it hard to see the ender eye.
+
+      **Workaround:** Use **F3+Esc** to buffer-pause instead of plain Esc.
+      This does not trigger the transparency bug.
+
+      This bug is tracked and awaiting a developer fix.
+    did_not_help: escalate_generic
+
   sol_sens_magnifier_flicker:
     type: solution
     text: |
@@ -1052,6 +1122,14 @@ nodes:
       7. **Add the overlay to each mode you want it in:**
          Go to Advanced > Modes > Fullscreen > Window Overlays > Add it.
          Repeat for EyeZoom, Thin, Wide, etc. The overlay won't appear in modes where it hasn't been added.
+
+      **Known limitation:** Window overlays can sometimes "capture" mouse input when you hover over
+      the area where NinjaBrainBot is positioned (even if it's on another virtual desktop). If this
+      causes pauses or tab-outs, try repositioning the NinjaBrainBot window on the virtual desktop
+      to a different location, or switch to the **image overlay** method.
+
+      Also, do NOT click the NinjaBrainBot minimize button while using window overlay -- it will
+      cause the overlay to freeze. If the overlay freezes, restart Minecraft.
     did_not_help: sol_ninb_not_visible
 
   sol_ninb_setup_image:
@@ -1095,6 +1173,10 @@ nodes:
       2. Go to **Advanced -> Overlays -> [Your NinB Overlay]**
       3. Adjust the **X/Y position** and **size** values
       4. You can set **different positions per mode** if needed
+      5. **Important:** If the overlay disappears when switching to EyeZoom mode, change the
+         position anchor from **"Bottom Right (Viewport)"** to **"Bottom Right (Screen)"**.
+         The viewport changes size when entering EyeZoom, which moves viewport-anchored
+         overlays off-screen.
     did_not_help: escalate_generic
 
   sol_ninb_color_key:
@@ -1122,12 +1204,19 @@ nodes:
   sol_ninb_angle_change:
     type: solution
     text: |
-      Toolscreen's sensitivity manipulation can affect NinjaBrainBot's angle calculations.
-      Make sure you've set up **godsens** correctly using the calculator:
-      https://qmaxxen.github.io/Toolscreen-sens-calc/
+      When using Toolscreen with NinjaBrainBot for boat eye, check these settings:
 
-      After setting godsens, update NinjaBrainBot's sensitivity settings to match.
-      If angle adjustments went from +0.001 to +0.002, your sensitivity configuration needs recalibrating.
+      **In NinjaBrainBot:**
+      1. **Crosshair correction** must be **0** (non-zero values from Jingle tutorials will break it)
+      2. **Tall resolution** should match your setup
+      3. **Tall height** should be **16384**
+      4. **Boat standard deviation** should be **0.0007**
+      5. Sensitivity must match your `options.txt` / `standardsettings.json`
+      6. Sensitivity should NOT be the default `0.012727`
+
+      Use **/nbbdebug** in the NinjaBrainBot Discord to verify all settings.
+
+      Set up godsens using the calculator: https://qmaxxen.github.io/Toolscreen-sens-calc/
     did_not_help: escalate_generic
 
   # ============================================================
@@ -1475,6 +1564,22 @@ nodes:
         prompt: "Please upload your launcher log (from Prism/MultiMC log viewer)"
       - key: steps
         prompt: "Describe the issue and steps to reproduce it"
+
+  # ============================================================
+  # SHARED: Known bugs (version-specific)
+  # ============================================================
+  sol_phantom_right_click:
+    type: solution
+    text: |
+      Random phantom right-clicks (e.g., misplacing obsidian) is a **known bug in Toolscreen v1.0.9.1**.
+
+      **Fix:**
+      1. Delete your config file: `C:\Users\<username>\.config\toolscreen\config.toml`
+      2. Reinstall Toolscreen (double-click the .jar)
+      3. Restart Minecraft
+
+      If the issue persists, downgrade to a previous version until a fix is released.
+    did_not_help: escalate_generic
 
   # ============================================================
   # SHARED: Common solution nodes referenced from multiple branches

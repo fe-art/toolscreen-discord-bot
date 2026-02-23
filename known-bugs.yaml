@@ -20,10 +20,11 @@ bugs:
     discord_thread: "1474141460424163348"
     github_issue: null
     status: investigating
-    affects: [escalate_freeze]
+    affects: [escalate_freeze, sol_ff_dedicated_gpu]
     summary: >
-      Strongly correlated with integrated GPUs. Screen goes black or freezes
-      when toggling display modes or macros. Acknowledged by developer.
+      Screen goes black or freezes when toggling display modes or macros.
+      Correlated with integrated GPUs, but also affects very new dGPUs
+      (e.g. AMD RX 9070 XT) with immature driver support. Acknowledged by developer.
 
   flickering_fullscreen_borderless:
     name: Screen flickering in fullscreen/borderless
@@ -121,3 +122,34 @@ bugs:
     summary: >
       Two causes: AMD Adrenalin DLL injection, or hook chaining issue.
       disableHookChaining=false or Virtual Camera workaround.
+
+  phantom_right_click:
+    name: Random phantom right-clicks in v1.0.9.1
+    discord_thread: null
+    github_issue: null
+    status: open
+    affects: [sol_phantom_right_click]
+    summary: >
+      v1.0.9.1 causes random right-clicks (e.g. misplacing obsidian).
+      Workaround: delete config.toml + reinstall.
+
+  eyezoom_esc_opacity:
+    name: Eye zoom overlay goes transparent when pausing with Esc
+    discord_thread: null
+    github_issue: null
+    status: open
+    affects: [sol_sens_eyezoom_esc_opacity]
+    summary: >
+      v1.0.9+ bug. Pressing Esc during eye zoom makes overlay transparent.
+      Workaround: use F3+Esc instead. 5+ users confirmed.
+
+
+  ninb_overlay_mouse_capture:
+    name: NinB window overlay captures mouse / causes tab-out
+    discord_thread: null
+    github_issue: null
+    status: open
+    affects: [sol_ninb_setup_window]
+    summary: >
+      Hovering over NinB's background position causes game pauses/tab-outs.
+      Fear acknowledged overlays are "a little cooked."
