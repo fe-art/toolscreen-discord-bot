@@ -29,7 +29,9 @@ INACTIVITY_H: int = config.get("inactivity_hours", 24)
 INACTIVITY_CHECK_MIN: int = config.get("inactivity_check_interval_minutes", 30)
 
 DEFAULT_TRIAGE = """\
-Hey @MENTION, to help troubleshoot please fill in what you can:
+Hey @MENTION, before filling this out, check <#1475303077342085121> — your issue might already be covered there!
+
+If it's not, please fill in what you can:
 
 OS: (e.g. Windows 10, Windows 11)
 Toolscreen version:

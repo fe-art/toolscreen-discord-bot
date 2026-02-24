@@ -4,7 +4,7 @@ Support bot for the [Toolscreen](https://github.com/jojoe77777/Toolscreen) proje
 
 ## Troubleshooting command
 
-`/troubleshoot` walks the user through an interactive decision tree loaded from `troubleshooting-tree.yaml`. The tree was built by feeding recent messages from **#help** and **#more-help** into an LLM to extract the most frequent pitfalls and their known fixes, then flattening the result into a YAML graph of nodes that point to each other:
+`/troubleshoot` walks the user through an interactive decision tree loaded from `troubleshooting-tree.yaml`. The tree was built from recurring issues in **#help** and **#more-help**, structured as a YAML graph of nodes that point to each other:
 
 ```
 checked A? -> yes: go to check B
@@ -15,7 +15,7 @@ If none of the known fixes apply, the user is prompted to create a post in **#mo
 
 Every node visit and solve is counted in `bot.db` (`node_hits` table). A solve records the node that fixed it (e.g. `sol_crash_f11:solved`), so `/troubleshoot-stats` shows which paths users take most and which fixes actually work. Use this to prune dead branches and prioritize common issues.
 
-The knowledge base is only as good as the data behind it. Contributions to `troubleshooting-tree.yaml` are welcome to keep it up to date until this process can be automated.
+The knowledge base is only as good as the data behind it. Contributions to `troubleshooting-tree.yaml` are welcome to keep it up to date.
 
 ## Bug triage listener
 
