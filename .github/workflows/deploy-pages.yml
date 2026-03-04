@@ -1,16 +1,14 @@
 name: Deploy troubleshooting site
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
       - 'troubleshooting-tree.yaml'
       - 'known-bugs.yaml'
       - 'docs/**'
-
-permissions:
-  pages: write
-  id-token: write
+      - '.github/workflows/deploy-pages.yml'
 
 concurrency:
   group: pages
@@ -18,9 +16,6 @@ concurrency:
 
 jobs:
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,9 +25,30 @@ jobs:
           cp troubleshooting-tree.yaml docs/
           cp known-bugs.yaml docs/
 
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs/
+      - name: Deploy to toolscreen.github.io
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
 
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          git clone git@github.com:Toolscreen/toolscreen.github.io.git target || git init target
+          rsync -a --delete --exclude='.git' docs/ target/
+          cd target
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -z "$(git log --oneline -1 2>/dev/null)" ]; then
+            git add -A
+            git commit -m "initial deploy"
+            git branch -M main
+            git remote add origin git@github.com:Toolscreen/toolscreen.github.io.git || true
+            git push -u origin main
+          else
+            git add -A
+            if ! git diff --cached --quiet; then
+              git commit -m "update troubleshooting site"
+              git push
+            fi
+          fi
