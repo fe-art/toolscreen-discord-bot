@@ -157,10 +157,6 @@ def render_node(node_id: str) -> tuple[discord.Embed, discord.ui.View]:
 
     elif ntype == "escalate":
         _add_escalate_content(embed, node, node_id)
-        view.add_item(discord.ui.Button(
-            label="That solved it!", custom_id=f"ts:{node_id}:solved",
-            style=discord.ButtonStyle.success, emoji="\u2705",
-        ))
 
     view.add_item(discord.ui.Button(
         label="Start over", custom_id="ts:root",
