@@ -74,6 +74,8 @@ nodes:
         next: sol_faq_transparent_fullscreen
       - label: "Minecraft 1.21.x support / terrain breaks on resize"
         next: sol_faq_mc121
+      - label: "Double-clicking the .jar does nothing / opens as a ZIP"
+        next: sol_jarfix
       - label: "Something else"
         next: escalate_generic
 
@@ -316,8 +318,6 @@ nodes:
         next: sol_modrinth_unsupported
       - label: "MCSR Launcher"
         next: sol_mcsr_launcher_issues
-      - label: "Double-clicking the .jar does nothing / opens as a ZIP"
-        next: sol_jarfix
 
   sol_vanilla_launcher:
     type: solution
