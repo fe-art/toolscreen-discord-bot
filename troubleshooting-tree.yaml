@@ -2250,18 +2250,6 @@ nodes:
       After exclusions are set, future auto-updates should work without needing to disable Defender.
     did_not_help: nsu_antivirus
 
-  # ============================================================
-  # §12.3  Virtual camera FPS cost
-  # ============================================================
-  sol_obs_virtual_camera_fps:
-    type: solution
-    text: |
-      The **virtual camera doubles the render workload** — Toolscreen renders the game once for your display and once for the virtual camera output. This causes a significant FPS drop, which is expected and confirmed by the developer.
-
-      **Fix:** Only enable the virtual camera when you actively need it (Discord screenshare, streaming). Disable it for normal play:
-      Ctrl+I → Advanced → Settings → Virtual Camera → Off
-    did_not_help: escalate_generic
-
   sol_faq_gif_background:
     type: solution
     text: |
