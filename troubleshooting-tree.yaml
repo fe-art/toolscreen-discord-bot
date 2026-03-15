@@ -12,8 +12,8 @@
 # `escalate` is always a terminal node.
 
 meta:
-  version: 3
-  updated: "2026-03-06"
+  version: 4
+  updated: "2026-03-15"
 
 nodes:
 
@@ -48,12 +48,32 @@ nodes:
         next: howto_update_or_uninstall
       - label: "Toolscreen doesn't fill the screen (1440p, 4K, ultrawide)"
         next: sol_resolution_mismatch
-      - label: "Random phantom right-clicks / obsidian misplacement"
-        next: sol_phantom_right_click
       - label: "Fullscreen resets on every new world"
         next: sol_ff_standardsettings
       - label: "Pie chart looks doubled in thin mode"
         next: sol_thin_pie_doubled
+      - label: "EyeZoom overlay is completely white / mirrors disappeared"
+        next: eyezoom_white_version
+      - label: "Game is stuck in EyeZoom / Thin mode on every launch"
+        next: sol_mode_stuck_default
+      - label: "Pie chart resets directory every new world"
+        next: sol_pie_directory_standardsettings
+      - label: "\"Go Borderless\" button / click-to-borderless popup disappeared"
+        next: sol_borderless_popup_gone
+      - label: "I'm on Linux"
+        next: sol_linux_waywall
+      - label: "Custom cursor or background image won't load"
+        next: sol_cursor_unicode_path
+      - label: "Mouse cursor disappears from the game window"
+        next: sol_cursor_disappears
+      - label: "GIF background / does Toolscreen support GIF?"
+        next: sol_faq_gif_background
+      - label: "Auto-launch NinjaBrainBot with Toolscreen"
+        next: sol_faq_autolaunch_ninb
+      - label: "Transparent background in fullscreen (is it possible?)"
+        next: sol_faq_transparent_fullscreen
+      - label: "Minecraft 1.21.x support / terrain breaks on resize"
+        next: sol_faq_mc121
       - label: "Something else"
         next: escalate_generic
 
@@ -221,6 +241,8 @@ nodes:
       If you need Afterburner, you can either:
       - Add Minecraft's `javaw.exe` to RivaTuner and set **Application Detection Level** to **None**
       - Hook chaining is **enabled by default** since v1.1 and should handle most overlay conflicts automatically
+
+      **Also check `config.toml`:** If `disableHookChaining = true` is set, the GUI (Ctrl+I) will not open even if everything else is correct. Open `C:\Users\<username>\.config\toolscreen\config.toml` and ensure `disableHookChaining = false` (the default since v1.1). Only set it to `true` if you experience crashes with RTSS.
     did_not_help: nsu_gpu_overlay
 
   nsu_unicode:
@@ -294,6 +316,8 @@ nodes:
         next: sol_modrinth_unsupported
       - label: "MCSR Launcher"
         next: sol_mcsr_launcher_issues
+      - label: "Double-clicking the .jar does nothing / opens as a ZIP"
+        next: sol_jarfix
 
   sol_vanilla_launcher:
     type: solution
@@ -693,12 +717,18 @@ nodes:
     options:
       - label: "Massive FPS drop (e.g., 60 -> 10 FPS)"
         next: perf_massive
+      - label: "FPS halved after going \"borderless\" (snapped/maximised window)"
+        next: sol_perf_pseudowindowed
       - label: "Frame loss on every mouse movement"
         next: perf_polling_rate
       - label: "FPS degrades gradually over time"
         next: sol_perf_gradual
       - label: "Lag only in a specific mode (eye zoom, thin, etc.)"
         next: perf_font
+      - label: "FPS significantly lower with Toolscreen than without"
+        next: sol_perf_mapless_mirror
+      - label: "Virtual camera causing FPS drop"
+        next: sol_obs_virtual_camera_fps
       - label: "Overlay is slow/laggy (NinjaBrainBot)"
         next: perf_overlay_type
 
@@ -831,6 +861,18 @@ nodes:
         next: sol_kb_number_keys
       - label: "Hotkey requires multiple presses / modes cycle weirdly"
         next: sol_kb_jingle_conflict
+      - label: "Caps Lock or Windows key can't be rebound"
+        next: sol_kb_capslock_winkey
+      - label: "Backspace clears the bind instead of being assigned as the trigger"
+        next: sol_kb_backspace_bind
+      - label: "\"Types\" field shows wrong character (keyboard layout editor)"
+        next: sol_kb_types_wrong_char
+      - label: "Holding D (strafe) blocks a mouse button hotkey from firing"
+        next: sol_kb_d_blocks_mouse_f3
+      - label: "No way to pause all rebinds while typing in chat"
+        next: sol_kb_typing_toggle
+      - label: "Shift+key alternative mode fires incorrectly"
+        next: sol_mode_alt_hotkey_priority
       - label: "Other keybind issue"
         next: kb_other
 
@@ -900,6 +942,10 @@ nodes:
       **Important:** Game States require the **state-output mod** to be installed.
       Check that `wpstateout.txt` exists in your `.minecraft` folder. If you previously had state-output
       installed but removed it, delete the leftover `wpstateout.txt` file.
+
+      **Trade-off:** Setting **"In World (Cursor Grabbed)"** means your hotkeys won't fire while paused or in the inventory — this is the accepted trade-off for speedrunning use. If you want hotkeys in the pause menu, you'll need to leave game state filtering off and accept they may fire while typing.
+
+      **Note on F3 exclusion key:** By default, **F3 is *not* added as an exclusion key** on resize hotkeys. Some users choose to add it manually to prevent accidental resizes when pressing combinations like **F3+G** or **F3+A**. If you want this behavior, go to **Advanced → Hotkeys → [Hotkey] → Exclusion Keys** and add **F3**. If you want your hotkey to fire while holding F3, simply leave the exclusion list unchanged.
     did_not_help: kb_other
 
   sol_kb_number_keys:
@@ -1014,6 +1060,10 @@ nodes:
         next: sol_sens_eye_wiggle
       - label: "Sensitivity feels wrong or choppy / pixel skipping"
         next: sens_raw_input
+      - label: "Pixel skipping at a specific multiplier value (jumpy movement)"
+        next: sol_sens_pixel_skipping
+      - label: "Sensitivity resets to default on every new world"
+        next: sol_sens_resets_world
       - label: "Eye zoom looks very choppy / low FPS (2-5 FPS)"
         next: sol_sens_eyezoom_fps
       - label: "Zoom level too close or too far (compared to Jingle)"
@@ -1026,6 +1076,12 @@ nodes:
         next: sol_sens_eyezoom_esc_opacity
       - label: "Eye zoom magnifier is flickering"
         next: sol_sens_magnifier_flicker
+      - label: "Camera snaps to floor / spins when entering EyeZoom (raw input was off)"
+        next: sol_sens_camera_snap
+      - label: "EyeZoom projector disappeared / broken after adjusting width"
+        next: sol_eyezoom_width_broken
+      - label: "Boat eye setup / godsens / FOV / Enhanced Pointer Precision"
+        next: sol_faq_boateye_setup
 
   sol_sens_eye_wiggle:
     type: solution
@@ -1120,13 +1176,10 @@ nodes:
   sol_sens_eyezoom_esc_opacity:
     type: solution
     text: |
-      This is a **known bug in Toolscreen v1.0.9+**. When you pause with Esc during eye zoom,
-      the overlay becomes transparent, making it hard to see the ender eye.
+      This bug (EyeZoom overlay going transparent when pausing with Esc) was **fixed in v1.1.x**.
+      **Update Toolscreen** to v1.1+ to resolve it permanently.
 
-      **Workaround:** Use **F3+Esc** to buffer-pause instead of plain Esc.
-      This does not trigger the transparency bug.
-
-      This bug is tracked and awaiting a developer fix.
+      **Workaround on older versions:** Use **F3+Esc** to pause instead of plain Esc. This activates the debug menu alongside the pause menu and does not trigger the transparency effect. Only the in-game view is affected — OBS and virtual camera captures are unaffected.
     did_not_help: escalate_generic
 
   sol_sens_magnifier_flicker:
@@ -1135,6 +1188,34 @@ nodes:
       The eye zoom magnifier sometimes flickers on the **F3+Esc** screen. Try:
       1. Use a different F3 state (toggle F3 off and back on)
       2. Update to the latest Toolscreen version
+    did_not_help: escalate_generic
+
+  sol_sens_camera_snap:
+    type: solution
+    text: |
+      This was a **regression introduced in v1.1.1** that broke mouse delta handling when raw input was off, causing the camera to violently snap downward and spin when entering any resize mode (Thin, Wide, EyeZoom).
+
+      **Fix:**
+      1. **Always keep raw input ON** in Minecraft settings — this is required for Toolscreen to function correctly
+      2. If you want a slower sensitivity in EyeZoom for measuring, use Toolscreen's **EyeZoom Sensitivity Override** slider (Ctrl+I -> Advanced -> Modes -> EyeZoom -> Sensitivity) instead of toggling raw input off
+      3. **Update to v1.1.3+** which patches the underlying code bug
+
+      You should never need to turn raw input off when using Toolscreen.
+    did_not_help: escalate_generic
+
+  sol_eyezoom_width_broken:
+    type: solution
+    text: |
+      Setting the EyeZoom width **below a certain minimum** causes the projector to disappear and not recover, even after restarting or resetting to defaults.
+
+      **Fix:**
+      1. Restore your config from backup: `C:\Users\<username>\.config\toolscreen\backups\`
+         Open the backups folder, find the most recent backup, and copy it over `config.toml`
+
+      **Minimum width advisory:**
+      - The **Thin mode** has a minimum of **330 px** to avoid cutting off the E counter and CPU name on the F3 screen
+      - If you need a narrower view, create a **custom mode** with no minimum: **Advanced -> Modes -> (+ add custom mode)**
+      - The **EyeZoom height** should remain at **16384** — changing it breaks NinjaBrainBot's angle calculation (it assumes a specific pixel-per-degree ratio at that height). Width can be adjusted freely (384 is standard)
     did_not_help: escalate_generic
 
   # ============================================================
@@ -1162,6 +1243,16 @@ nodes:
         next: sol_ninb_auto_hide
       - label: "NinjaBrainBot angle changed after Toolscreen install"
         next: sol_ninb_angle_change
+      - label: "Pressing NinjaBrainBot hotkey tabs out of the game"
+        next: sol_ninb_hotkey_tabout
+      - label: "Two overlays showing at once (one ghost/translucent)"
+        next: sol_ninb_dual_overlay
+      - label: "Overlay disappears / not visible in EyeZoom mode"
+        next: sol_ninb_eyezoom_missing
+      - label: "Overlay squishes or distorts when NinB window changes size"
+        next: sol_ninb_squish
+      - label: "NinjaBrainBot hotkeys not working (running as admin)"
+        next: sol_ninb_admin
 
   ninb_setup_type:
     type: question
@@ -1287,6 +1378,43 @@ nodes:
       Set up godsens using the calculator: https://qmaxxen.github.io/Toolscreen-sens-calc/
     did_not_help: escalate_generic
 
+  sol_ninb_hotkey_tabout:
+    type: solution
+    text: |
+      NinjaBrainBot's native **"Toggle Visibility"** hotkey brings the NinjaBrainBot window into focus when pressed, which tabs you out of Minecraft.
+
+      **Fix:**
+      1. In **NinjaBrainBot settings**, find the "Toggle Visibility" hotkey and **disable it** (clear the bind)
+      2. Instead, use Toolscreen's own hotkey: **Advanced -> Hotkeys -> Toggle Window Overlays**
+         This hides/shows the overlay inside the game without switching focus
+
+      You should not use NinjaBrainBot's native hotkey at all when running it through Toolscreen's window overlay.
+    did_not_help: escalate_generic
+
+  sol_ninb_dual_overlay:
+    type: solution
+    text: |
+      You have **both** the image overlay and the window overlay active simultaneously, causing a translucent ghost image behind the sharp window overlay.
+
+      **Fix:**
+      1. Go to **Ctrl+I -> Basic**
+      2. Find **"Enable NinjaBrainBot Overlay"** and set it to **Off**
+      3. Keep only the **window overlay** active (set up via Advanced -> Overlays)
+
+      The Basic tab's NinjaBrainBot overlay toggle controls the image overlay. If you've switched to using the window overlay method, you must disable the image overlay here.
+    did_not_help: escalate_generic
+
+  sol_ninb_admin:
+    type: solution
+    text: |
+      If Minecraft (or your launcher) is **run as administrator**, NinjaBrainBot cannot send keystrokes to it unless NinjaBrainBot is also run as administrator. Windows restricts inter-process keyboard injection between different privilege levels.
+
+      **Fix:** Do **not** run your Minecraft launcher as administrator.
+      Right-click the launcher icon -> Properties -> Compatibility tab -> uncheck "Run this program as an administrator".
+
+      If you must run the launcher as admin for some reason, you'd also need to run NinjaBrainBot as admin — but this is not recommended.
+    did_not_help: escalate_generic
+
   # ============================================================
   # BRANCH 7B: Pie mirror / other overlay issues
   # ============================================================
@@ -1298,6 +1426,8 @@ nodes:
         next: ov_pie_issue
       - label: "Unspecified values not showing in thin mode"
         next: sol_ov_color_code
+      - label: "Spikes look different size in Preemptive vs EyeZoom mode"
+        next: sol_mode_preemptive_vs_eyezoom
       - label: "Other overlay"
         next: escalate_generic
 
@@ -1316,6 +1446,8 @@ nodes:
       When NinjaBrainBot is minimized, the window overlay **stops updating**.
       Instead of minimizing, use **Win+Tab** to move NinjaBrainBot to a **separate virtual desktop**.
       This keeps it "running" and visible to Toolscreen without covering your game.
+
+      Also check: in newer versions of Toolscreen, there is a **"Force Update"** checkbox in the Window Overlay settings — enabling this can help if the overlay stops refreshing even when NinjaBrainBot is visible on another virtual desktop.
     did_not_help: sol_ov_ninb_bring_to_front
 
   sol_ov_ninb_bring_to_front:
@@ -1339,6 +1471,10 @@ nodes:
         next: sol_ov_pie_mobspawner
       - label: "Pie chart in wrong position / can't move it"
         next: sol_ov_pie_position
+      - label: "Mirror accidentally deleted / disappeared"
+        next: sol_mirror_deleted
+      - label: "Mirror shows CPU name instead of entity count"
+        next: sol_mirror_cpu_bleed
 
   sol_ov_pie_directory:
     type: solution
@@ -1399,6 +1535,8 @@ nodes:
     options:
       - label: "Black screen in OBS"
         next: obs_capture_type
+      - label: "White screen in OBS (EyeZoom area is white)"
+        next: eyezoom_white_version
       - label: "Animations / transitions not showing in OBS"
         next: obs_anim_borderless
       - label: "Game appears upside down in OBS"
@@ -1409,6 +1547,8 @@ nodes:
         next: sol_obs_virtual_camera_setup
       - label: "Toolscreen features only work when OBS is open"
         next: sol_obs_dependency
+      - label: "Virtual camera / FPS drop from virtual camera"
+        next: sol_obs_virtual_camera_fps
 
   # --- OBS: Game Capture vs Window Capture confusion ---
   obs_capture_type:
@@ -1544,8 +1684,11 @@ nodes:
   sol_save_resolution:
     type: solution
     text: |
-      This was a bug fixed in **v1.0.4**. **Update Toolscreen** to the latest version.
-      If you're already up to date and it still happens, use the **Advanced tab** instead of the Basic tab as a workaround.
+      This is a **known open bug** — resolution set in the **Basic tab** does not save reliably.
+
+      **Workaround:** Use the **Advanced tab** to set your thin/wide resolution instead.
+      Go to **Ctrl+I -> Advanced -> Modes -> Thin/Wide -> Resolution** and set the value there.
+      Settings set via the Advanced tab do persist correctly.
     did_not_help: escalate_generic
 
   sol_save_themes:
@@ -1594,6 +1737,8 @@ nodes:
     options:
       - label: "How to update Toolscreen"
         next: sol_howto_update
+      - label: "Auto-update ran but version didn't change (silent fail)"
+        next: sol_autoupdate_silent_fail
       - label: "How to uninstall Toolscreen"
         next: sol_howto_uninstall
       - label: "How to copy settings between instances"
@@ -1689,18 +1834,493 @@ nodes:
         prompt: "Describe the issue and steps to reproduce it"
 
   # ============================================================
-  # SHARED: Known bugs (version-specific)
+  # BRANCH 13: EyeZoom / clone all white
   # ============================================================
-  sol_phantom_right_click:
+  eyezoom_white_version:
+    type: question
+    text: "What Toolscreen version are you on?"
+    options:
+      - label: "1.1.1 or 1.1.2"
+        next: sol_eyezoom_white_1112
+      - label: "1.1.3"
+        next: sol_eyezoom_white_113
+      - label: "1.1.4 or newer"
+        next: sol_eyezoom_white_114plus
+      - label: "Not sure"
+        next: sol_eyezoom_white_1112
+
+  sol_eyezoom_white_1112:
     type: solution
     text: |
-      Random phantom right-clicks (e.g., misplacing obsidian) is a **known bug in Toolscreen v1.0.9.1**.
+      The **all-white EyeZoom overlay** is a known bug in **v1.1.1 and v1.1.2**. It occurs when Toolscreen calibrates to the wrong OpenGL texture, often due to OBS, Medal, or RivaTuner hooking in first.
+
+      **Immediate fixes (try in order):**
+      1. **Update to v1.1.4** — this is the most complete fix
+      2. Close **OBS**, **Medal**, and **RivaTuner** before launching Minecraft, then restart
+      3. If you need OBS open: in your OBS Game Capture source properties, enable **"Capture third-party overlays"**
+      4. Restart Minecraft until the overlay loads correctly (may take 5+ attempts in rare cases)
+
+      **Permanent workaround if you can't update:** Downgrade to **v1.0.9**.
+    did_not_help: escalate_generic
+
+  sol_eyezoom_white_113:
+    type: solution
+    text: |
+      On **v1.1.3**, the white-screen bug was partially fixed. A side effect is that **OBS Game Capture** now requires **"Capture third-party overlays"** to be enabled to see the Toolscreen overlay.
 
       **Fix:**
-      1. Delete your config file: `C:\Users\<username>\.config\toolscreen\config.toml`
-      2. Reinstall Toolscreen (double-click the .jar)
-      3. Restart Minecraft
+      1. In OBS, right-click your **Game Capture** source → **Properties**
+      2. Enable **"Capture third-party overlays"**
+      3. If the overlay is still white, close **Medal** entirely (it masquerades as the OBS hook and confuses Toolscreen's texture lookup)
 
-      If the issue persists, downgrade to a previous version until a fix is released.
+      For a complete fix, **update to v1.1.4** where this option is no longer required.
     did_not_help: escalate_generic
+
+  sol_eyezoom_white_114plus:
+    type: solution
+    text: |
+      The white EyeZoom overlay bug was fully resolved in **v1.1.4**. If you're still seeing a white overlay on v1.1.4+:
+
+      1. Close **Medal** entirely — it can still interfere on some configurations
+      2. Disable **AMD Adrenalin overlay** if you have an AMD GPU
+      3. Delete `config.toml` and let it regenerate
+      4. If nothing else works, close all overlay software (OBS, Medal, RTSS) and test with a clean launch
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # BRANCH 14: Mode stuck as default
+  # ============================================================
+  sol_mode_stuck_default:
+    type: solution
+    text: |
+      You've accidentally set an overlay mode (EyeZoom, Thin, Wide, etc.) as your **default mode** instead of Fullscreen.
+
+      **Fix:**
+      1. Press **Ctrl+I** to open the settings menu
+      2. Go to **Advanced -> Modes -> Fullscreen**
+      3. Click **"Set as Default Mode"**
+
+      Toolscreen will now always start in fullscreen and only switch to other modes when you press the relevant hotkey.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # BRANCH 15: Pie directory / StandardSettings
+  # ============================================================
+  sol_pie_directory_standardsettings:
+    type: solution
+    text: |
+      Minecraft resets the pie chart directory every time a new world is loaded. You need to lock it via the **StandardSettings** mod.
+
+      **Fix:**
+      1. Open `.minecraft/config/mcsr/standardsettings.json`
+      2. Add or update the `pieDirectory` field:
+         - For **mapless / preemptive**: `"pieDirectory": "root.gameRenderer.level.entities"`
+         - For **fortress nav**: `"pieDirectory": "root.tick.level.entities.blockEntities"`
+
+      **Common mistake — `rootroot`:** If the field already starts with `root.` and you type `root.` again, you'll get `rootroot.gameRenderer...` which Minecraft doesn't recognise and no pie will appear. Make sure the value starts with exactly one `root.`.
+
+      Close the game before editing the file.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # BRANCH 16: Linux
+  # ============================================================
+  sol_linux_waywall:
+    type: solution
+    text: |
+      **Toolscreen is Windows-only** and does not run on Linux.
+
+      Linux users should use **Waywall** instead, which provides equivalent functionality:
+      https://github.com/tesselslate/waywall
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # BRANCH 17: Custom cursor / background image path
+  # ============================================================
+  sol_cursor_unicode_path:
+    type: solution
+    text: |
+      If your custom cursor or background image file path contains **non-ASCII characters** (e.g., accented letters, non-Latin characters, or symbols), Toolscreen will fail to load the file with an error like `invalid image: can't fopen`.
+
+      **Fix:** Move the image file to a path with only standard English characters.
+      For example:
+      - `C:\toolscreen_images\mycursor.png` ✓
+      - `C:\Users\André\Pictures\cursor.png` ✗ (accented character in path)
+
+      After moving the file, update the path in Toolscreen settings.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §1.4  JARfix
+  # ============================================================
+  sol_jarfix:
+    type: solution
+    text: |
+      If double-clicking the Toolscreen `.jar` does nothing, or Windows tries to open it as a ZIP/archive, your system's `.jar` file association is broken — Java is not set as the default handler.
+
+      **Fix:** Download and run **JARfix**: https://github.com/qMaxXen/Jarfix/releases/latest
+      It resets the `.jar` association to Java in one click.
+
+      After running JARfix, try double-clicking the Toolscreen `.jar` again.
+    did_not_help: nsu_antivirus
+
+  # ============================================================
+  # §3.2  Borderless popup removed in 1.1.x
+  # ============================================================
+  sol_borderless_popup_gone:
+    type: solution
+    text: |
+      The **"Click here to go borderless"** banner that appeared in the top-left was removed in **v1.1.x**. To go borderless now, use any of these methods:
+
+      1. **Ctrl+I → Basic → "Go Borderless"** button
+      2. Enable **Auto Borderless**: Ctrl+I → Basic → Other → Auto Borderless (goes borderless automatically on launch)
+      3. Set a hotkey: Ctrl+I → Advanced → Hotkeys → Toggle Borderless
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §3.3  FPS drop in pseudo-windowed / snapped state
+  # ============================================================
+  sol_perf_pseudowindowed:
+    type: solution
+    text: |
+      If you're seeing severe FPS drops (e.g., 60 → 15 fps) while apparently in borderless mode, you may be in a **pseudo-windowed state** — for example, a window snapped to the top of the screen via Windows' snap feature, which looks fullscreen but isn't.
+
+      Check the resolution shown in the F3 screen. If it's something like **1902×1033** instead of your monitor's native resolution, you're not in true borderless.
+
+      **Fix:**
+      1. Move the window back to a normal windowed state first (drag it away from the top edge)
+      2. Then press your Toolscreen borderless hotkey to enter true borderless
+      3. Do **not** use Windows snap to "maximise" the window — use Toolscreen's own borderless toggle
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §7.3  Pixel skipping at specific multiplier values
+  # ============================================================
+  sol_sens_pixel_skipping:
+    type: solution
+    text: |
+      If mouse movement feels unusually jumpy at a specific sensitivity multiplier (e.g., skipping 4–8 pixels per tick instead of ~1–2), this is a suspected **floating-point accumulation bug** in Toolscreen.
+
+      Small sub-pixel movements are buffered internally and occasionally fire as a double-jump.
+
+      **Workaround:** Adjust your multiplier slightly — even a small change like **1.35 → 1.351** can eliminate the skipping. Try values a few thousandths either side until it feels smooth.
+
+      This is under investigation; no definitive fix exists yet beyond tweaking the value.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §7.4  Sensitivity resets on new world (StandardSettings)
+  # ============================================================
+  sol_sens_resets_world:
+    type: solution
+    text: |
+      If your in-game sensitivity reverts to a different value every time you load a new world, the **StandardSettings mod** is overwriting it.
+
+      **Fix:**
+      1. Open `.minecraft/config/mcsr/standardsettings.json`
+      2. Find the `mouseSensitivity` field and set it to your desired value
+      3. Your Minecraft `options.txt` and `standardsettings.json` **must have the same value** — whichever is in standardsettings wins on world load
+      4. Close the game before editing either file
+
+      For godsens, the correct value is `0.02291165` in both files (not `0.012727`, which is the old default).
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §8.1  NinB Force Update checkbox
+  # ============================================================
+  # (Already covered by sol_ov_ninb_virtual_desktop — adding "Force Update" note there via update below)
+
+  # ============================================================
+  # §8.2  NinB overlay squishes / drifts
+  # ============================================================
+  sol_ninb_squish:
+    type: solution
+    text: |
+      The window overlay captures and scales NinjaBrainBot's window to a fixed output size. If NinjaBrainBot's window **changes height** (e.g., more text appears as you get a reading), the overlay squishes or stretches to fit.
+
+      **Workarounds:**
+      1. Resize NinjaBrainBot's window to a fixed size that accommodates the most text it ever shows, then don't resize it
+      2. Use a **colour key** to make the background transparent — this hides the squishing visually
+      3. Independent X/Y scaling for overlays is a **requested feature** not yet implemented
+
+      The image overlay has the same squishing issue since it also captures a fixed region.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §8.4  NinB overlay not showing in EyeZoom mode
+  # ============================================================
+  sol_ninb_eyezoom_missing:
+    type: solution
+    text: |
+      If the NinjaBrainBot overlay appears in fullscreen mode but **disappears in EyeZoom mode**, you need to add it to the EyeZoom mode separately — overlays must be added to each mode individually.
+
+      **Fix:**
+      1. Ctrl+I → **Advanced → Modes → EyeZoom → Window Overlays**
+      2. Add your NinjaBrainBot overlay here
+
+      **Important — use Screen anchor, not Viewport anchor:**
+      EyeZoom mode has a **16384-pixel-tall viewport**. If your overlay position uses a Viewport anchor (e.g., "Bottom Right (Viewport)"), it will be placed relative to that giant viewport and appear off-screen.
+      Change the anchor to **"(Screen)"** instead — e.g., "Bottom Right (Screen)".
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §9.1  Caps Lock / Windows key can't be rebound
+  # ============================================================
+  sol_kb_capslock_winkey:
+    type: solution
+    text: |
+      **Caps Lock** and the **Windows key** cannot be rebound by Toolscreen. These keys are intercepted at the OS level before they reach any application, so Toolscreen has no opportunity to remap them.
+
+      **Fix:** Use **AutoHotKey (AHK)** to remap Caps Lock or the Windows key at the OS level:
+      - Example AHK line to use Caps Lock as a key: `CapsLock:: Send, {F14}` (then bind F14 in Toolscreen)
+      - AHK intercepts globally before Windows processes the key
+
+      Toolscreen handles all other keys correctly; only these two require AHK.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §9.4  Backspace clears bind instead of assigning it
+  # ============================================================
+  sol_kb_backspace_bind:
+    type: solution
+    text: |
+      Pressing Backspace while setting a hotkey **clears the bind** rather than assigning Backspace as the trigger. This is a known limitation in v1.0.x.
+
+      **Workaround (v1.1+):**
+      Use the **keyboard layout editor's "Custom"** input and manually enter keycode **8** (the Windows virtual key code for Backspace).
+      Ctrl+I → Advanced → Inputs → Custom → type `8`.
+
+      Alternatively, remap a different physical key to act as Backspace via the rebind system, then set that key as your hotkey trigger.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §9.5  "Types" field shows wrong character (1.1.1, fixed 1.1.2)
+  # ============================================================
+  sol_kb_types_wrong_char:
+    type: solution
+    text: |
+      In **v1.1.1**, the keyboard layout editor's **"Types"** dropdown showed incorrect characters when selecting from the list — setting a key via the list populated the wrong value.
+
+      **Fix:** Update to **v1.1.2+** where this is corrected.
+
+      **Workaround on v1.1.1:** Use the **"Custom"** input box and type the character directly instead of selecting from the dropdown list.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §9.6  Holding D blocks mouse button F3 rebind
+  # ============================================================
+  sol_kb_d_blocks_mouse_f3:
+    type: solution
+    text: |
+      Rebinding a mouse side button to trigger F3 works in most situations, but **fails when the D key (strafe right) is held simultaneously**. This also fails with vanilla AutoHotKey under the same conditions, which suggests it's a Minecraft or Windows input-handling quirk rather than a Toolscreen bug.
+
+      There is currently **no Toolscreen-specific fix**. A bug report has been filed with Mojang. As a workaround, consider rebinding your strafe key or using a different key for your F3 trigger that doesn't conflict.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §9.10  No single toggle for typing mode / shift layers
+  # ============================================================
+  sol_kb_typing_toggle:
+    type: solution
+    text: |
+      There is currently no built-in single key to **pause all rebinds while typing in chat** and resume them when done.
+
+      The **"Toggle Key Rebinding"** hotkey (Ctrl+I → Advanced → Hotkeys → Toggle Key Rebinding) can disable/enable all rebinds, but you must press it manually before and after typing.
+
+      **Planned feature:** Shift layer support would allow different key mappings to activate automatically by context. This is awaiting a ruling from speedrun.com moderators on legality before implementation.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §11.2  Alternative mode hotkey priority bug
+  # ============================================================
+  sol_mode_alt_hotkey_priority:
+    type: solution
+    text: |
+      If you have a hotkey with an **alternative mode on Shift+key**, pressing the base key alone may incorrectly trigger the alternative mode swap first. The hotkey evaluation order is inverted — this is a **known bug** acknowledged by the developer.
+
+      **Workaround:** Avoid using Shift-variant alternative modes on the same hotkey until a fix is released. Use separate hotkeys for each mode instead.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §11.3  Preemptive vs EyeZoom spike sizes (expected behaviour)
+  # ============================================================
+  sol_mode_preemptive_vs_eyezoom:
+    type: solution
+    text: |
+      Preemptive mode and EyeZoom mode render at different internal chunk-load resolutions, so **entity spikes on the pie chart look larger in EyeZoom than in Preemptive**.
+
+      This is **expected behaviour**, not a bug.
+
+      - Use **Preemptive mode** for finding and identifying spikes
+      - Use **EyeZoom mode** for precise angle measurement
+
+      The different sizes are a consequence of the rendering approach and cannot be changed.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §12.3  Virtual camera FPS cost
+  # ============================================================
+  sol_obs_virtual_camera_fps:
+    type: solution
+    text: |
+      The **virtual camera doubles the render workload** — Toolscreen renders the game once for your display and once for the virtual camera output. This causes a significant FPS drop, which is expected and confirmed by the developer.
+
+      **Fix:** Only enable the virtual camera when you actively need it (Discord screenshare, streaming). Disable it for normal play:
+      Ctrl+I → Advanced → Settings → Virtual Camera → Off
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §12.4  General FPS lower with Toolscreen / mapless mirror perf
+  # ============================================================
+  sol_perf_mapless_mirror:
+    type: solution
+    text: |
+      Toolscreen has a general FPS cost due to its rendering pipeline. Some specific things make it significantly worse:
+
+      1. **Mapless mirror in Fullscreen mode** — this is the single biggest FPS culprit. Remove it from fullscreen if you don't need it there: Ctrl+I → Advanced → Modes → Fullscreen → Mirrors → remove the Mapless mirror group
+      2. **Borderless mode** has lower performance than fullscreen — switch to fullscreen if FPS is critical
+      3. **Virtual camera enabled** when not needed — disable it (see above)
+      4. **Unused mirrors** — remove any mirror groups from modes where you don't need them
+
+      Performance improvements are being worked on for future versions.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §14.2  Mirror accidentally deleted
+  # ============================================================
+  sol_mirror_deleted:
+    type: solution
+    text: |
+      If you accidentally deleted a mirror or mirror group, **"Reset to Defaults"** only resets the mode layout — it does not restore mirrors.
+
+      **Options:**
+      1. **Restore from backup**: `C:\Users\<username>\.config\toolscreen\backups\` — find the most recent backup before the deletion and copy it over `config.toml`
+      2. **Re-add the mirror manually**: Ctrl+I → Advanced → Modes → [Your Mode] → Mirrors → Mirror Groups → Add the relevant group (e.g., "Preemptive Pie")
+      3. **Use a community config**: Check the `#mirrors-configs` channel in the Toolscreen Discord for pre-made mirror configurations you can paste in
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §14.3  Mirror shows CPU name instead of E count
+  # ============================================================
+  sol_mirror_cpu_bleed:
+    type: solution
+    text: |
+      If your E Counter mirror shows a CPU name or partial text instead of the entity count numbers, your CPU name on the F3 screen is **bleeding into the mirror's capture zone**.
+
+      **Fix:**
+      1. Increase your **Thin mode width** slightly (by 10–20 px) — this pushes the capture zone to where only the numbers appear
+      2. Or adjust the **E Counter mirror's capture X offset and width** directly: Ctrl+I → Advanced → Modes → Thin → Mirrors → E Counter → adjust the capture region
+
+      The correct position varies by CPU name length, so you may need to experiment.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §15.1  Cursor disappears after alt-tab
+  # ============================================================
+  sol_cursor_disappears:
+    type: solution
+    text: |
+      If the mouse cursor disappears from the game window after alt-tabbing back in (or when a window overlay is active):
+
+      1. **Alt-tab out and back in** — usually restores it
+      2. **Toggle borderless off and back on** using your borderless hotkey
+      3. If using OBS: switch from **Window Capture** to **Game Capture** — Window Capture can interfere with cursor visibility
+      4. If it happens consistently with a window overlay active, try repositioning or resizing the overlay slightly
+
+      This is an intermittent issue with no permanent fix yet.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §16.1  Auto-updater silently fails (Defender deletes new DLL)
+  # ============================================================
+  sol_autoupdate_silent_fail:
+    type: solution
+    text: |
+      The auto-updater downloads the new version, but **Windows Defender's real-time protection silently deletes the new DLL** before it can be registered. The game then launches on the old version with no error message.
+
+      **Signs this happened:** Toolscreen prompts to update, you accept, but the version number hasn't changed after relaunch.
+
+      **Fix:**
+      1. Temporarily disable **Windows Defender real-time protection** (Windows Security → Virus & threat protection → Real-time protection → Off)
+      2. Run the update again (or download and install manually from GitHub)
+      3. Re-enable real-time protection and add the exclusions:
+         - `C:\Users\<username>\.config\toolscreen\`
+         - The Toolscreen JAR and instance folder
+
+      After exclusions are set, future auto-updates should work without needing to disable Defender.
+    did_not_help: nsu_antivirus
+
+  # ============================================================
+  # §12.3  Virtual camera FPS cost
+  # ============================================================
+  sol_obs_virtual_camera_fps:
+    type: solution
+    text: |
+      The **virtual camera doubles the render workload** — Toolscreen renders the game once for your display and once for the virtual camera output. This causes a significant FPS drop, which is expected and confirmed by the developer.
+
+      **Fix:** Only enable the virtual camera when you actively need it (Discord screenshare, streaming). Disable it for normal play:
+      Ctrl+I → Advanced → Settings → Virtual Camera → Off
+    did_not_help: escalate_generic
+
+  sol_faq_gif_background:
+    type: solution
+    text: |
+      **GIF backgrounds are supported.** Use a `.gif` file (not `.mp4` or other video formats).
+      Set it in Ctrl+I → Advanced → Modes → [Your Mode] → Background → select your `.gif` file.
+
+      Note: Very large GIF files (high resolution or many frames) can cause lag. Keep them reasonably sized.
+    did_not_help: escalate_generic
+
+  sol_faq_autolaunch_ninb:
+    type: solution
+    text: |
+      You can auto-launch NinjaBrainBot when Minecraft starts via Toolscreen's **prelaunch.txt** file.
+
+      Add this line to `C:\Users\<username>\.config\toolscreen\prelaunch.txt` (create it if it doesn't exist):
+      ```
+      start "" javaw -jar "C:\path\to\ninjabrain-bot.jar"
+      ```
+      Replace the path with the actual location of your NinjaBrainBot jar.
+
+      Toolscreen will execute this before Minecraft launches each time.
+    did_not_help: escalate_generic
+
+  sol_faq_transparent_fullscreen:
+    type: solution
+    text: |
+      A **transparent window background in fullscreen** is technically impossible. In true fullscreen mode, there is nothing behind the game window to show through — the desktop and other windows are not rendered.
+
+      In **borderless** mode, transparency is possible because the desktop is still composited behind the window. If you need a transparent effect, use borderless mode.
+    did_not_help: escalate_generic
+
+  sol_faq_mc121:
+    type: solution
+    text: |
+      Toolscreen has **partial support for Minecraft 1.21.x**. The main known issue is that resizing (switching to Thin/Wide/EyeZoom mode) **breaks terrain rendering** — chunks may not load correctly or appear corrupted after a resize.
+
+      This is actively being worked on. For now, use **1.16.1** or another fully-supported version if you need reliable resize functionality.
+    did_not_help: escalate_generic
+
+  # ============================================================
+  # §18  Boat eye / sensitivity common confusion (FAQ)
+  # ============================================================
+  sol_faq_boateye_setup:
+    type: solution
+    text: |
+      Common boat eye setup mistakes:
+
+      **You no longer need to change DPI or Windows cursor speed** for boat eye with Toolscreen. Set your MC sensitivity to `0.02291165` (in both `options.txt` and `standardsettings.json`), then use Toolscreen's **Global Sensitivity multiplier** to match your preferred cm/360. Use the calculator: https://qmaxxen.github.io/Toolscreen-sens-calc/
+
+      **Raw input must always be ON.** Never turn it off. Use the EyeZoom Sensitivity Override slider to slow down measuring sensitivity.
+
+      **FOV must be 30** when measuring eyes. This is the single most common cause of missed throws — double-check it every session.
+
+      **Enhanced Pointer Precision** (Windows mouse acceleration) must be **OFF**: Windows Settings → Bluetooth & devices → Mouse → Additional mouse settings → Pointer Options → uncheck "Enhance pointer precision".
+
+      **NinjaBrainBot sensitivity** (v1.13+) must match the value in `options.txt` — use `0.02291165`. Do not leave it at the old default of `0.012727`.
+
+      **Crosshair correction in NinjaBrainBot must be 0** — non-zero values from Jingle tutorials will give wrong angles with Toolscreen.
+    did_not_help: escalate_generic
+
+
 
