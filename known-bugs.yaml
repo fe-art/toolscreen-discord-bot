@@ -6,7 +6,6 @@
 #
 # Fields:
 #   id:              stable key, referenced from troubleshooting-tree.yaml
-#   name:            short human-readable label
 #   discord_thread:  thread ID in #more-help
 #   github_issue:    optional, linked GH issue number
 #   status:          open | investigating | fixed
@@ -41,7 +40,7 @@ bugs:
     discord_thread: "1473758138107953265"
     github_issue: null
     status: fixed
-    affects: [sol_kb_modifier_keys_legacy]
+    affects: [sol_kb_modifier_keys_legacy, sol_kb_modifier_keys_v11]
     summary: >
       Fixed in v1.1 (modifier keys) and v1.1.2 (left alt vs right alt).
       Keyboard layout editor in Advanced -> Inputs for advanced rebinding.
@@ -72,7 +71,7 @@ bugs:
     discord_thread: "1474903666837159946"
     github_issue: null
     status: open
-    affects: []
+    affects: [escalate_generic]
     summary: >
       Frame limiter reports/applies half the configured FPS value.
       Reported since 1.0.7, persists in 1.0.9.1.
@@ -82,7 +81,7 @@ bugs:
     discord_thread: "1474623687553581126"
     github_issue: null
     status: open
-    affects: []
+    affects: [escalate_generic]
     summary: >
       Custom cursor size does not persist across restarts.
 
@@ -130,22 +129,21 @@ bugs:
     discord_thread: null
     github_issue: null
     status: open
-    affects: [sol_phantom_right_click]
+    affects: []
     summary: >
       v1.0.9.1 causes random right-clicks (e.g. misplacing obsidian).
-      Workaround: delete config.toml + reinstall.
+      Workaround: delete config.toml + reinstall. No longer surfaced in
+      troubleshooting tree (removed as unreliable/outdated guidance).
 
   eyezoom_esc_opacity:
     name: Eye zoom overlay goes transparent when pausing with Esc
     discord_thread: null
     github_issue: null
-    status: investigating
+    status: fixed
     affects: [sol_sens_eyezoom_esc_opacity]
     summary: >
-      v1.0.9+ bug. Pressing Esc during eye zoom makes overlay transparent.
-      v1.1 fixed "EyeZoom rendering issues with fog (pause menu)" which may cover this.
-      Workaround: use F3+Esc instead.
-
+      Fixed in v1.1 ("EyeZoom rendering issues with fog / pause menu").
+      Workaround for older versions: use F3+Esc instead of plain Esc.
 
   ninb_overlay_mouse_capture:
     name: NinB window overlay captures mouse / causes tab-out
@@ -156,3 +154,58 @@ bugs:
     summary: >
       Hovering over NinB's background position causes game pauses/tab-outs.
       Fear acknowledged overlays are "a little cooked."
+
+  eyezoom_white_overlay:
+    name: EyeZoom clone projector renders all-white / mirrors disappear
+    discord_thread: null
+    github_issue: null
+    status: fixed
+    affects: [eyezoom_white_version, sol_eyezoom_white_1112, sol_eyezoom_white_113, sol_eyezoom_white_114plus]
+    summary: >
+      Introduced in v1.1.1. Toolscreen calibrates the wrong OpenGL texture
+      (id 3 instead of 60) when OBS, Medal, or RTSS hooks in first.
+      Partially fixed in v1.1.3; fully fixed in v1.1.4.
+      Medal masquerades as OBS hook (medal-hook64.dll) which triggered the bug.
+
+  camera_snap_raw_input_off:
+    name: Camera snaps to floor / spins when entering EyeZoom with raw input off
+    discord_thread: null
+    github_issue: null
+    status: fixed
+    affects: [sol_sens_camera_snap]
+    summary: >
+      Regression in v1.1.1. Mouse delta handling broke when rawInput=false,
+      causing violent camera movement on any mode switch. Fixed in v1.1.3.
+      Mitigation: always keep raw input ON; use EyeZoom sensitivity override instead.
+
+  alt_mode_hotkey_priority:
+    name: Shift+key alternative mode fires on base key press (evaluation order inverted)
+    discord_thread: null
+    github_issue: null
+    status: open
+    affects: [sol_mode_alt_hotkey_priority]
+    summary: >
+      When a hotkey has a Shift+key alternative mode, pressing the base key
+      alone also triggers the alternative mode swap first. Under investigation by jojoe.
+
+  pixel_skipping_multiplier:
+    name: Pixel skipping unusually large at specific global multiplier values
+    discord_thread: null
+    github_issue: null
+    status: open
+    affects: [sol_sens_pixel_skipping]
+    summary: >
+      At certain multiplier values (e.g. 1.35x) mouse ticks skip 4-8 pixels
+      instead of ~1-2. Suspected float accumulation bug. Workaround: adjust
+      multiplier slightly (e.g. 1.35 -> 1.351).
+
+  sens_resets_via_standardsettings:
+    name: In-game sensitivity overwritten by StandardSettings on world load
+    discord_thread: null
+    github_issue: null
+    status: open
+    affects: [sol_sens_resets_world]
+    summary: >
+      mouseSensitivity in standardsettings.json overwrites options.txt on each
+      world load. Both files must be set to the same value. Not a Toolscreen bug
+      per se, but a frequent source of confusion.
